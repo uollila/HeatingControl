@@ -1,0 +1,43 @@
+[
+  {
+      "tempLow": 18.0,
+      "tempHigh": 22.0,
+      "ip": "0.0.0.0",
+      "name": "default"
+  },
+  {
+      "Region": "FI",
+      "RelayName": "default",
+      "RelayNumbers": [
+        0
+      ],
+      "Inverted": false,
+      "PostalCode": "02210",
+      "Latitude": "60.000",
+      "Longitude": "24.000",
+      "HeatingHours_MaxTemperature": 23,
+      "HeatingHours_Plus30": 1,
+      "HeatingHours_Plus20": 6,
+      "HeatingHours_Plus10": 10,
+      "HeatingHours_Zero": 14,
+      "HeatingHours_Minus10": 18,
+      "HeatingHours_Minus20": 22,
+      "HeatingHours_Minus30": 24,
+      "HeatingHours_MinTemperature": -20,
+      "MinimumHoursPeriod_IsActive": true,
+      "MinimumHoursPeriod_TemperatureStart": 0,
+      "MinimumHoursPeriod_PriceAllowed": 20,
+      "MinimumHoursPeriod_Hours": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      "MinimumHoursPeriod_NumberOfHours": 2,
+      "AllowedDays": [1, 2, 3, 4, 5, 6, 7],
+      "AllowedMonths": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "BackupHours": [0, 1, 2, 3, 4, 5, 6, 21, 22, 23],
+      "MaximumPrice": 999,
+      "PriceAlwaysAllowed": 1,
+      "PriceModifier_IsActive": true,
+      "PriceModifier_Sum": -1.43,
+      "PriceModifier_Months": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "PriceModifier_Days": [1, 2, 3, 4, 5, 6, 7],
+      "PriceModifier_Hours": [22, 23, 0, 1, 2, 3, 4, 5, 6]
+    }
+]
