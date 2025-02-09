@@ -3,34 +3,9 @@
 import datetime
 import time
 import schedule
+from pathlib import Path
 
 from thermostat import Thermostat
-
-
-# MODIABLE SECTION OF THE CODE #
-def adjustEteinenSettings(eteinen: Thermostat) -> None:
-    eteinen.HeatingHours_Plus20 = 4 # Number of heating hours at +20C
-    eteinen.HeatingHours_Plus10 = 8 # Number of heating hours at +10C
-    eteinen.HeatingHours_Zero = 12    # Number of heating hours at 0C
-    eteinen.HeatingHours_Minus10 = 16 	# Number of heating hours at -10C
-    eteinen.HeatingHours_Minus20 = 20 	# Number of heating hours at -20C
-    eteinen.HeatingHours_Minus30 = 24 	# Number of heating hours at -30C
-    
-    eteinen.MinimumHoursPeriod_PriceAllowed = 20
-    eteinen.MinimumHoursPeriod_NumberOfHours = 3
-
-def adjustWcSettings(wc: Thermostat) -> None:
-    wc.setTemps(18, 24)
-
-    wc.HeatingHours_Plus20 = 8 # Number of heating hours at +20C
-    wc.HeatingHours_Plus10 = 12 # Number of heating hours at +10C
-    wc.HeatingHours_Zero = 16    # Number of heating hours at 0C
-    wc.HeatingHours_Minus10 = 20 	# Number of heating hours at -10C
-    wc.HeatingHours_Minus20 = 24 	# Number of heating hours at -20C
-    wc.HeatingHours_Minus30 = 24 	# Number of heating hours at -30C
-
-    wc.PriceAlwaysAllowed = 2
-# MODIABLE SECTION OF THE CODE ENDS #
 
 def setHeating(target: Thermostat) -> None:
 
@@ -59,18 +34,30 @@ def setHeating(target: Thermostat) -> None:
     if not successful:
         print('Lämpötilan asettaminen termostaattiin epäonnistui.')
     else:
-        target.plotHistory()    
+        target.plotHistory()
+
+def readConfigs(thermostats: list):
+    thermostats.clear()
+    configPath = "configs/"
+    filelist = Path(configPath).rglob('*.json')
+    for file in filelist:
+        if "default.json" in str(file):
+            continue
+        print(f"Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö")
+        thermostat = Thermostat(file)
+        thermostat.setIpAddress()
+        thermostats.append(thermostat)
+    return thermostats
 
 def main():
+    thermostats = []
     # Luodaan objektit jokaiselle ohjattavalle kohteelle. Annetaan nimet ja IP-osoitteet
-    kph = Thermostat("configs/kph.json")
-    eteinen = Thermostat("configs/eteinen.json")
-    wc = Thermostat("configs/wc.json")
-
+    thermostats = readConfigs(thermostats)
     #Ajastetaan säätöfunktio jokaiselle kohteelle
-    schedule.every().hour.at("01:30").do(setHeating, kph)
-    schedule.every().hour.at("01:40").do(setHeating, eteinen)
-    schedule.every().hour.at("01:50").do(setHeating, wc)
+    baseTime = 30
+    for thermostat in thermostats:
+        schedule.every().hour.at(f"01:{baseTime}").do(setHeating, thermostat)
+        baseTime += 10
     schedule.run_all()
     while True:
         schedule.run_pending()

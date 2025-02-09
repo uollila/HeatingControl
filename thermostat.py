@@ -2,24 +2,37 @@
 
 import httpx
 import json
+import os
 import time
 from collections import namedtuple
+from pathlib import Path
 
 # This provides the base class for the configuration that is used in API-call to
 # https://api.spot-hinta.fi/
 class Thermostat:
 
-    def __init__(self, ConfigPath: str):
+    def __init__(self, ConfigPath: Path):
         self.__configPath = ConfigPath
+        self.ipAddress = '0.0.0.0'
 
-    def getTemps(self) -> (float, float):
+    def getTemps(self) -> tuple[float, float]:
         Temp = namedtuple('Temp', 'low high')
         data = self.getConfiguration()
         return Temp(data['tempLow'], data['tempHigh'])
 
+    def setIpAddress(self) -> None:
+        defaultIp = '0.0.0.0'
+        name = self.__configPath.stem
+        variable = "ip_" + name
+        ipAddress = os.getenv(variable, defaultIp)
+        if ipAddress == defaultIp:
+            print('Varoitus! IP:tä ei löytynyt ympäristömuuttujana.' 
+                  'Muista asettaa jokaiselle konfigurointitiedostolle sopiva IP ympäristömuuttujaksi')
+        self.ipAddress = ipAddress
+        print(f"Asetettiin ip {self.ipAddress}.")
+
     def getIpAddress(self) -> str:
-        data = self.getConfiguration()
-        return data['ip']
+        return self.ipAddress
 
     def getConfiguration(self) -> dict:
         with open(self.__configPath, "r") as json_file:
