@@ -22,7 +22,7 @@
     "HeatingHours_Minus10": 18,
     "HeatingHours_Minus20": 22,
     "HeatingHours_Minus30": 24,
-    "HeatingHours_MinTemperature": -20,
+    "HeatingHours_MinTemperature": -21,
     "MinimumHoursPeriod_IsActive": true,
     "MinimumHoursPeriod_TemperatureStart": 0,
     "MinimumHoursPeriod_PriceAllowed": 25,
