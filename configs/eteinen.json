@@ -32,7 +32,7 @@
       "AllowedMonths": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
       "BackupHours": [0, 1, 2, 3, 4, 5, 6, 21, 22, 23],
       "MaximumPrice": 999,
-      "PriceAlwaysAllowed": 2,
+      "PriceAlwaysAllowed": 1,
       "PriceModifier_IsActive": true,
       "PriceModifier_Sum": -1.43,
       "PriceModifier_Months": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],

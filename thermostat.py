@@ -56,7 +56,10 @@ class Thermostat:
                 response = httpx.get(url)
                 if response.status_code == 200:
                     responseJson = response.json()
-                    print(f'''Termostaatin asetettu lämpötila {responseJson['parameters']['heatingSetpoint']}, Status: {responseJson['state']}''')
+                    print(f'''Termostaatin tämän hetken asetettu lämpötila {responseJson['parameters']['heatingSetpoint']} C, ''' \
+                          f'''Status: {responseJson['state']}''')
+                    print(f'''Huoneen lämpötila: {responseJson['internalTemperature']} C, ''' \
+                          f'''lattian lämpötila: {responseJson['floorTemperature']} C''')
                 else:
                     print(f'Termostaatti vastasi koodilla {response.status_code}')
             except httpx.RequestError as exc:
@@ -76,7 +79,9 @@ class Thermostat:
                 response = httpx.post(url, json=data)
                 if response.status_code == 200 or response.status_code == 400:
                     responseJson = response.json()
-                    print(f'''api-spot-hinta.fi vastasi koodilla {response.status_code}\nPeruste: {responseJson['StatusCodeReason']}\nSähkön hinta siirtohinta huomioiden nyt: {responseJson['PriceWithTaxInCentsModified']} senttiä.''')
+                    print(f'''api-spot-hinta.fi vastasi koodilla {response.status_code}\nPeruste: ''' \
+                          f'''{responseJson['StatusCodeReason']}\nSähkön hinta siirtohinta huomioiden nyt: ''' \
+                          f'''{responseJson['PriceWithTaxInCentsModified']} senttiä.''')
                 else:
                     print(f'Saatiin koodi {response.status_code}. Päättele siitä.')
             except httpx.RequestError as exc:
