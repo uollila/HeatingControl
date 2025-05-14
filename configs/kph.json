@@ -1,7 +1,7 @@
 [
     {
         "tempLow": 18.0,
-        "tempHigh": 23.0,
+        "tempHigh": 24.0,
         "name": "kph"
     },
     {
@@ -17,8 +17,8 @@
     "HeatingHours_MaxTemperature": 23,
     "HeatingHours_Plus30": 1,
     "HeatingHours_Plus20": 6,
-    "HeatingHours_Plus10": 10,
-    "HeatingHours_Zero": 14,
+    "HeatingHours_Plus10": 12,
+    "HeatingHours_Zero": 16,
     "HeatingHours_Minus10": 18,
     "HeatingHours_Minus20": 22,
     "HeatingHours_Minus30": 24,

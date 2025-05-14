@@ -80,7 +80,8 @@ class Thermostat:
                 if response.status_code == 200 or response.status_code == 400:
                     responseJson = response.json()
                     print(f'''api-spot-hinta.fi vastasi koodilla {response.status_code}\nPeruste: ''' \
-                          f'''{responseJson['StatusCodeReason']}\nSähkön hinta siirtohinta huomioiden nyt: ''' \
+                          f'''{responseJson['StatusCodeReason']} Rank {responseJson['RankNow']}/''' \
+                          f'''{responseJson['CalculatedRank']}\nSähkön hinta siirtohinta huomioiden nyt: ''' \
                           f'''{responseJson['PriceWithTaxInCentsModified']} senttiä.''')
                 else:
                     print(f'Saatiin koodi {response.status_code}. Päättele siitä.')
