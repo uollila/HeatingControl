@@ -2,7 +2,8 @@
   {
       "tempLow": 18.0,
       "tempHigh": 22.0,
-      "name": "default"
+      "name": "default",
+      "type": "thermostat"
   },
   {
       "Region": "FI",

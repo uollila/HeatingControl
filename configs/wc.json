@@ -1,10 +1,11 @@
 [
   {
       "tempLow": 18.0,
-      "tempHigh": 22.0,
-      "name": "wc"
+      "tempHigh": 24.0,
+      "name": "wc",
+      "type": "thermostat"
   },
-{
+  {
     "Region": "FI",
     "RelayName": "wc_alakerta",
     "RelayNumbers": [

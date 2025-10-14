@@ -7,7 +7,7 @@ from device import Device
 
 # This provides the base class for the configuration that is used in API-call to
 # https://api.spot-hinta.fi/
-class Thermostat(Device):
+class Panel(Device):
 
     def getCurrentStatus(self) -> dict:
         url = "http://" + self.getIpAddress() + "/api/status"
@@ -18,19 +18,17 @@ class Thermostat(Device):
                 response = httpx.get(url)
                 if response.status_code == 200:
                     responseJson = response.json()
-                    print(f'''Termostaatin {responseJson['room']} tämän hetken asetettu lämpötila {responseJson['parameters']['heatingSetpoint']} C''')
-                    print(f'''Status: {responseJson['state']}, huoneen lämpötila: {responseJson['internalTemperature']} C, ''' \
-                          f'''lattian lämpötila: {responseJson['floorTemperature']} C''')
+                    print(f'''Patterin tämän hetken asetettu lämpötila {responseJson['parameters']['heatingSetpoint']} C''')
+                    print(f'Status: {responseJson['state']}, Huoneen lämpötila: {responseJson['roomTemperature']} C')
                 else:
-                    print(f'Termostaatti vastasi koodilla {response.status_code}')
+                    print(f'Patteri vastasi koodilla {response.status_code}')
             except httpx.RequestError as exc:
-                print(f"Termostaattiin ei saatu yhteyttä. Yritetään 5 sekunnin päästä uudelleen.")
+                print(f"Patteriin ei saatu yhteyttä. Yritetään 5 sekunnin päästä uudelleen.")
                 time.sleep(5)
             else:
                 return responseJson
         return responseJson
     
-
     def plotHistory(self):
         print("\n\n")
         return

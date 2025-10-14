@@ -2,7 +2,8 @@
     {
         "tempLow": 18.0,
         "tempHigh": 24.0,
-        "name": "kph"
+        "name": "kph",
+        "type": "thermostat"
     },
     {
     "Region": "FI",
@@ -15,7 +16,7 @@
     "Latitude": "60.173359",
     "Longitude": "24.733416",
     "HeatingHours_MaxTemperature": 23,
-    "HeatingHours_Plus30": 1,
+    "HeatingHours_Plus30": 0,
     "HeatingHours_Plus20": 6,
     "HeatingHours_Plus10": 12,
     "HeatingHours_Zero": 16,

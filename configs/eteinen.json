@@ -1,8 +1,9 @@
 [
   {
       "tempLow": 18.0,
-      "tempHigh": 22.0,
-      "name": "eteinen"
+      "tempHigh": 23.0,
+      "name": "eteinen",
+      "type": "thermostat"
   },
   {
       "Region": "FI",

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 import datetime
+import json
 import time
 import schedule
 from pathlib import Path
 
+from device import Device
+from panel import Panel
 from thermostat import Thermostat
 
 def setHeating(target: Thermostat) -> None:
@@ -32,39 +35,57 @@ def setHeating(target: Thermostat) -> None:
     hour = timestamp.tm_hour
     successful = target.adjustTempSetpoint(status, heatingDemand, useBackup, hour)
     if not successful:
-        print('Lämpötilan asettaminen termostaattiin epäonnistui.')
+        print("Lämpötilan asettaminen termostaattiin epäonnistui.")
     else:
         target.plotHistory()
 
-def readConfigs(thermostats: list):
-    thermostats.clear()
+def getDeviceType(file) -> str:
+    with open(file, "r") as json_file:
+        data = json_file.read()
+    parsed_data = json.loads(data)
+    return parsed_data[0]['type']
+
+def createObject(file: Path) -> Device:
+    deviceType = getDeviceType(file)
+    match deviceType:
+        case "panel":
+            device = Panel(file)
+        case "thermostat":
+            device = Thermostat(file)
+        case _:
+            print(f"Tiedostossa {file} on tuntematon laitetyyppi {deviceType}, objektia ei luoda.")
+            return None
+    device.setIpAddress()
+    return device
+
+def readConfigs(devices: list) -> list[Device]:
+    devices.clear()
     configPath = "configs/"
     filelist = Path(configPath).rglob('*.json')
     for file in filelist:
         if "default.json" in str(file):
             continue
         print(f"Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö")
-        thermostat = Thermostat(file)
-        thermostat.setIpAddress()
-        thermostats.append(thermostat)
-    return thermostats
+        device = createObject(file)
+        devices.append(device)
+    return devices
 
-def main():
-    thermostats = []
+def main() -> None:
+    devices = []
     # Luodaan objektit jokaiselle ohjattavalle kohteelle. Annetaan nimet ja IP-osoitteet
-    thermostats = readConfigs(thermostats)
+    devices = readConfigs(devices)
     #Ajastetaan säätöfunktio jokaiselle kohteelle
-    baseTime = 30
-    for thermostat in thermostats:
-        schedule.every().hour.at(f"01:{baseTime}").do(setHeating, thermostat)
-        baseTime += 10
+    baseTime = 10
+    for device in devices:
+        schedule.every().hour.at(f"01:{baseTime}").do(setHeating, device)
+        baseTime += 2
     schedule.run_all()
     while True:
         schedule.run_pending()
-        time.sleep(1)
+        time.sleep(30)
 
 
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
