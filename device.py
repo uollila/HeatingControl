@@ -60,7 +60,7 @@ class Device:
                     print(f'''api-spot-hinta.fi vastasi koodilla {response.status_code}\n'''
                           f'''Peruste: {responseJson['StatusCodeReason']} Rank '''
                           f'''{responseJson['RankNow']}/{responseJson['CalculatedRank']}, '''
-                          f'''hinta : {responseJson['PriceWithTaxInCentsModified']} senttiä.''')
+                          f'''hinta: {responseJson['PriceWithTaxInCentsModified']} senttiä.''')
                 else:
                     print(f'Saatiin koodi {response.status_code}. Päättele siitä.')
             except httpx.RequestError as exc:
@@ -81,16 +81,15 @@ class Device:
         if newTemp == oldTemp:
             print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
             return True
-        url = f'''http://{self.getIpAddress()}/api/parameters?heatingSetpoint=
-              {newTemp}&operatingMode=1'''
+        url = f'''http://{self.getIpAddress()}/api/parameters?heatingSetpoint={newTemp}&operatingMode=1'''
         attempts = 5
         for attempt in range(attempts):
             try:
                 response = httpx.post(url)
                 if response.status_code == 200:
                     responseJson = response.json()
-                    print(f'''Termostaatiin asetettiin uusi lämpötila
-                          {responseJson['heatingSetpoint']} astetta.''')
+                    print(f'''Termostaatiin asetettiin uusi lämpötila '''
+                          f'''{responseJson['heatingSetpoint']} astetta.''')
                 else:
                     print(f'Termostaatti vastasi koodilla {response.status_code}')
             except httpx.RequestError as exc:
