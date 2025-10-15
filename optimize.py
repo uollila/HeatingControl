@@ -1,83 +1,90 @@
 #!/usr/bin/env python3
+'''Main module for heating optimization'''
 
-import datetime
 import json
 import time
-import schedule
 from pathlib import Path
 
-from device import Device
-from panel import Panel
-from thermostat import Thermostat
+import schedule
+
+from classes.device import Device
+from classes.panel import Panel
+from classes.thermostat import Thermostat
 
 def setHeating(target: Thermostat) -> None:
-
+    '''Set heating based on current status and api-spot-hinta.fi data.'''
     #Printataan perustiedot
     name = target.getConfiguration()['name']
     timestamp = time.localtime(time.time())
     useBackup = False
-    strTime = time.strftime("%H:%M:%S (%a %d %b)", timestamp)
-    print(f"Kello on {strTime}. Asetetaan säädöt kohteeseen: {name}")
+    strTime = time.strftime('%H:%M:%S (%a %d %b)', timestamp)
+    print(f'Kello on {strTime}. Asetetaan säädöt kohteeseen: {name}')
 
     #Käydään hakemassa tämän hetkinen tilanne termarilta
     status = target.getCurrentStatus()
-    if (not status):
-        print("Termostaattiin ei saatu yhteyttä ja säätöä ei jatketa. Yritetään tunnin päästä uudelleen.")
+    if not status:
+        print('Termostaattiin ei saatu yhteyttä ja säätöä ei jatketa. Yritetään ' \
+              'tunnin päästä uudelleen.')
         return
 
     #Käydään hakemassa API:lta lämmityksen tarve
     heatingDemand = target.getHeatingDemand()
-    if (not heatingDemand):
-        print("api-spot-hinta.fi:stä ei saatu tarvittavia tietoja. Käytetään asetettuja backup-tunteja.")
+    if not heatingDemand:
+        print('api-spot-hinta.fi:stä ei saatu tarvittavia tietoja. ' \
+              'Käytetään asetettuja backup-tunteja.')
         useBackup = True
 
     #Asetetaan lämmitys seuraavalle tunnille saatujen tietojen perusteella
     hour = timestamp.tm_hour
     successful = target.adjustTempSetpoint(status, heatingDemand, useBackup, hour)
     if not successful:
-        print("Lämpötilan asettaminen termostaattiin epäonnistui.")
+        print('Lämpötilan asettaminen termostaattiin epäonnistui.')
     else:
         target.plotHistory()
 
 def getDeviceType(file) -> str:
-    with open(file, "r") as json_file:
-        data = json_file.read()
-    parsed_data = json.loads(data)
-    return parsed_data[0]['type']
+    '''Get device type from configuration file.'''
+    with open(file, 'r', encoding='utf-8') as jsonFile:
+        data = jsonFile.read()
+    parsedData = json.loads(data)
+    return parsedData[0]['type']
 
 def createObject(file: Path) -> Device:
+    '''Create device object based on configuration file.'''
     deviceType = getDeviceType(file)
     match deviceType:
-        case "panel":
+        case 'panel':
             device = Panel(file)
-        case "thermostat":
+        case 'thermostat':
             device = Thermostat(file)
         case _:
-            print(f"Tiedostossa {file} on tuntematon laitetyyppi {deviceType}, objektia ei luoda.")
+            print(f'Tiedostossa {file} on tuntematon laitetyyppi {deviceType}, objektia ei luoda.')
             return None
     device.setIpAddress()
     return device
 
 def readConfigs(devices: list) -> list[Device]:
+    '''Read configuration files and create device objects.'''
     devices.clear()
-    configPath = "configs/"
+    configPath = 'configs/'
     filelist = Path(configPath).rglob('*.json')
     for file in filelist:
-        if "default.json" in str(file):
+        if 'default.json' in str(file):
             continue
-        print(f"Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö")
+        print(f'Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö')
         device = createObject(file)
         devices.append(device)
     return devices
 
 def main() -> None:
+    '''Main function to run the heating optimization.'''
     devices = []
     # Luodaan objektit jokaiselle ohjattavalle kohteelle. Annetaan nimet ja IP-osoitteet
     devices = readConfigs(devices)
     #Ajastetaan säätöfunktio jokaiselle kohteelle
     baseTime = 10
     for device in devices:
-        schedule.every().hour.at(f"01:{baseTime}").do(setHeating, device)
+        schedule.every().hour.at(f'01:{baseTime}').do(setHeating, device)
         baseTime += 2
     schedule.run_all()
     while True:
@@ -87,5 +94,5 @@ def main() -> None:
 
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
