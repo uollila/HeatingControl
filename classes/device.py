@@ -10,13 +10,15 @@ from pathlib import Path
 import httpx
 
 class Device:
-    '''This provides the base class for the configuration that is used in API-call to
-       https://api.spot-hinta.fi/'''
+    '''This provides the base class for the heating devices.'''
 
     def __init__(self, configPath: Path):
         self.configPath = configPath
         self.name ='' # This will be set in getConfiguration
         self.ipAddress = '0.0.0.0'
+        self.futurePlan = []
+        self.planExpiration = 0
+        self.sensorMode = None
 
     def getName(self) -> str:
         '''Get name of the device from configuration.'''
@@ -54,6 +56,7 @@ class Device:
             data = jsonFile.read()
         parsedData = json.loads(data)
         self.name = parsedData[0]['name']
+        self.sensorMode = parsedData[0]['sensorMode']
         return parsedData[0]
 
     def getApiConfiguration(self) -> dict:
@@ -63,21 +66,68 @@ class Device:
         parsedData = json.loads(data)
         return parsedData[1]
 
-    def getHeatingDemand(self) -> dict:
-        '''Get heating demand from api-spot-hinta.fi.'''
+    def getLocalTimeFromEpoch(self, epoch: int) -> str:
+        '''Convert epoch milliseconds to local time string.'''
+        epochToLocal = time.localtime(epoch // 1000)
+        strTimeLocal = time.strftime('%H:%M:%S (%a %d %b)', epochToLocal)
+        return strTimeLocal
+
+    def getHeatingValuesFromFuturePlan(self, epoch: int) -> bool:
+        '''Get heating values from future plan.'''
+        returnValue = False
+        setDone = False
+        expirationLocalTime = self.getLocalTimeFromEpoch(self.planExpiration)
+        print(f'Tuleva suunnitelma, joka vanhenee {expirationLocalTime}:')
+        for item in self.futurePlan:
+            planTimeLocal = self.getLocalTimeFromEpoch(item['epochMs'])
+            if epoch > item['epochMs']and not setDone:
+                print(f'Aika: {planTimeLocal}, Lämmitystarve: {item['result']} (VOIMASSA NYT)')
+                returnValue = item['result']
+                setDone = True
+            else:
+                print(f'Aika: {planTimeLocal}, Lämmitystarve: {item['result']}.')
+        if not setDone:
+            print('Ei löytynyt sopivaa aikaväliä tulevasta suunnitelmasta, ' \
+                  'käytetään backup-tunteja.')
+            hour = time.localtime(epoch // 1000).tm_hour
+            backupHours = self.getApiConfiguration()['BackupHours']
+            if hour in backupHours:
+                returnValue = True
+        return returnValue
+
+    def getHeatingDemand(self) -> bool:
+        '''Get heating demand from future plan or fetch new plan if needed.'''
+        timestamp = time.time()
+        timeMillis = int(timestamp * 1000)
+        if timeMillis > self.planExpiration or not self.futurePlan:
+            gotNewPlan = self.getNewPlan()
+            if not gotNewPlan:
+                print('api-spot-hinta.fi:stä ei saatu tarvittavia tietoja. ' \
+                      'Käytetään asetettuja backup-tunteja.')
+                hour = time.localtime(timestamp).tm_hour
+                backupHours = self.getApiConfiguration()['BackupHours']
+                if hour in backupHours:
+                    return True
+                return False
+        return self.getHeatingValuesFromFuturePlan(timeMillis)
+
+    def getNewPlan(self) -> bool:
+        '''Get new heating plan from api-spot-hinta.fi.'''
         url = 'https://api.spot-hinta.fi/SmartHeating'
         data = self.getApiConfiguration()
         attempts = 3
-        responseJson = None
+        gotResponse = False
         for attempt in range(attempts):
             try:
                 response = httpx.post(url, json=data)
-                if response.status_code in [200, 400]:
+                if response.status_code == 200:
+                    gotResponse = True
                     responseJson = response.json()
-                    print(f'api-spot-hinta.fi vastasi koodilla {response.status_code}\n' \
-                          f'Peruste: {responseJson['StatusCodeReason']} Rank ' \
-                          f'{responseJson['RankNow']}/{responseJson['CalculatedRank']}, ' \
-                          f'hinta: {responseJson['PriceWithTaxInCentsModified']} senttiä.')
+                    self.futurePlan = responseJson['PlanAhead']
+                    self.planExpiration = responseJson['EpochMsExpiration']
+                    print(f'Saatiin uusi suunnitelma, voimasssa '
+                          f'{self.getLocalTimeFromEpoch(self.planExpiration)} asti.\n' \
+                          f'Vuorokauden keskilämpötila {responseJson['AverageTemperature']} C.')
                 else:
                     print(f'Saatiin koodi {response.status_code}. Päättele siitä.')
             except httpx.RequestError:
@@ -85,16 +135,8 @@ class Device:
                       f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
                 time.sleep(10)
             else:
-                return responseJson
-        return responseJson
-
-    def setBackupHours(self, temps: tuple[float], currentTemp: float, hour: int) -> None:
-        '''Set temperature based on backup hours if needed.'''
-        backupHours = self.getApiConfiguration()['BackupHours']
-        if hour in backupHours:
-            return self.setTemp(temps.high, currentTemp)
-        return self.setTemp(temps.low, currentTemp)
-
+                return gotResponse
+        return gotResponse
 
     def setTemp(self, newTemp: float, oldTemp: float) -> None:
         '''Set new temperature to device.'''
@@ -121,20 +163,13 @@ class Device:
                 return True
         return False
 
-    def adjustTempSetpoint(self, status: dict, heatingDemand: dict, useBackup: bool,
-                           hour: int) -> None:
+    def adjustTempSetpoint(self, status: dict, heating: bool) -> None:
         '''Adjust temperature setpoint based on current status and heating demand.'''
         temps = self.getTemps()
         currentTemp = status['parameters']['heatingSetpoint']
-        if useBackup:
-            return self.setBackupHours(temps, currentTemp, hour)
-        responseCode = heatingDemand['HttpStatusCode']
-        if responseCode == 200: #heating on
+        if heating: #heating on
             return self.setTemp(temps.high, currentTemp)
-        if responseCode == 400: #no heating
-            return self.setTemp(temps.low, currentTemp)
-        print('Tuntematon virhe. Käytetään backup-tunteja.')
-        return self.setBackupHours(temps, currentTemp, hour)
+        return self.setTemp(temps.low, currentTemp)
 
     def getCurrentStatus(self) -> dict:
         '''Get current status from device.'''

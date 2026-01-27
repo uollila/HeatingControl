@@ -7,16 +7,15 @@ from pathlib import Path
 
 import schedule
 
-from classes.device import Device
-from classes.panel import Panel
-from classes.thermostat import Thermostat
+from classes.device import Device # pylint: disable=import-error
+from classes.panel import Panel # pylint: disable=import-error
+from classes.thermostat import Thermostat # pylint: disable=import-error
 
 def setHeating(target: Thermostat) -> None:
     '''Set heating based on current status and api-spot-hinta.fi data.'''
     #Printataan perustiedot
     name = target.getConfiguration()['name']
     timestamp = time.localtime(time.time())
-    useBackup = False
     strTime = time.strftime('%H:%M:%S (%a %d %b)', timestamp)
     print(f'Kello on {strTime}. Asetetaan säädöt kohteeseen: {name}')
 
@@ -28,15 +27,9 @@ def setHeating(target: Thermostat) -> None:
         return
 
     #Käydään hakemassa API:lta lämmityksen tarve
-    heatingDemand = target.getHeatingDemand()
-    if not heatingDemand:
-        print('api-spot-hinta.fi:stä ei saatu tarvittavia tietoja. ' \
-              'Käytetään asetettuja backup-tunteja.')
-        useBackup = True
-
+    heating = target.getHeatingDemand()
     #Asetetaan lämmitys seuraavalle tunnille saatujen tietojen perusteella
-    hour = timestamp.tm_hour
-    successful = target.adjustTempSetpoint(status, heatingDemand, useBackup, hour)
+    successful = target.adjustTempSetpoint(status, heating)
     if not successful:
         print('Lämpötilan asettaminen termostaattiin epäonnistui.')
     else:
@@ -71,7 +64,7 @@ def readConfigs(devices: list) -> list[Device]:
     for file in filelist:
         if 'default.json' in str(file):
             continue
-        print(f'Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö')
+        print(f'Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö.')
         device = createObject(file)
         devices.append(device)
     return devices
@@ -85,6 +78,9 @@ def main() -> None:
     baseTime = 10
     for device in devices:
         schedule.every().hour.at(f'01:{baseTime}').do(setHeating, device)
+        #schedule.every().hour.at(f'16:{baseTime}').do(setHeating, device)
+        #chedule.every().hour.at(f'31:{baseTime}').do(setHeating, device)
+        #schedule.every().hour.at(f'46:{baseTime}').do(setHeating, device)
         baseTime += 2
     schedule.run_all()
     while True:
