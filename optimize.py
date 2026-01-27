@@ -78,9 +78,9 @@ def main() -> None:
     baseTime = 10
     for device in devices:
         schedule.every().hour.at(f'01:{baseTime}').do(setHeating, device)
-        #schedule.every().hour.at(f'16:{baseTime}').do(setHeating, device)
-        #chedule.every().hour.at(f'31:{baseTime}').do(setHeating, device)
-        #schedule.every().hour.at(f'46:{baseTime}').do(setHeating, device)
+        schedule.every().hour.at(f'16:{baseTime}').do(setHeating, device)
+        schedule.every().hour.at(f'31:{baseTime}').do(setHeating, device)
+        schedule.every().hour.at(f'46:{baseTime}').do(setHeating, device)
         baseTime += 2
     schedule.run_all()
     while True:
