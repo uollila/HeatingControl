@@ -10,25 +10,24 @@ Supported devices
 Requirements
 
 - Python 3.9+
-- pip packages: httpx, schedule
+- pip packages listed in the requirements.txt
 - Devices are in local network with fixed IP address  
 
 ## Quickstart
 
 1. Place one JSON configuration file per device in the `configs/` folder. Use the format in `configs/default.json`.
     - All required fields must be present or the script will fail.
+    - IP is set correctly in the config file for each device. Use your router to assign static IPs or DHCP reservations so addresses remain stable.
 
-2. Provide each device IP using an environment variable named `ip_<config_filename_without_extension>`. Example, for `configs/eteinen.json`:
-   `export ip_eteinen=192.168.1.10`
-   - Use your router to assign static IPs or DHCP reservations so addresses remain stable.
-
-3. Run script `python3 optimize.py`.
+2. Run script `python optimize.py`.
+    - The script creates objects for each config file and schedules heating according to the 
+configuration
     - The script updates temperature setpoints every 15 minutes (aligned to :00, :15, :30, :45)
 and logs actions to the console.
 
 ## Configuration overview
 
-- First object in the JSON: local device settings — name, type, tempLow, tempHigh, sensorMode, etc.
+- First object in the JSON: local device settings — name, IP, type, tempLow, tempHigh, sensorMode, etc.
 - Second object: API parameters used to request a heating plan from <https://api.spot-hinta.fi/SmartHeating>.
 
 ## Behaviour
@@ -44,3 +43,4 @@ and logs actions to the console.
 ## Contributing
 
 Open issues or pull requests for improvements, bug fixes, or additional device support.
+Open for any collaboration.

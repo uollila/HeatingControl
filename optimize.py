@@ -14,7 +14,7 @@ from classes.thermostat import Thermostat # pylint: disable=import-error
 def setHeating(target: Thermostat) -> None:
     '''Set heating based on current status and api-spot-hinta.fi data.'''
     #Printataan perustiedot
-    name = target.getConfiguration()['name']
+    name = target.getName()
     timestamp = time.localtime(time.time())
     strTime = time.strftime('%H:%M:%S (%a %d %b)', timestamp)
     print(f'Kello on {strTime}. Asetetaan säädöt kohteeseen: {name}')
@@ -53,7 +53,6 @@ def createObject(file: Path) -> Device:
         case _:
             print(f'Tiedostossa {file} on tuntematon laitetyyppi {deviceType}, objektia ei luoda.')
             return None
-    device.setIpAddress()
     return device
 
 def readConfigs(devices: list) -> list[Device]:

@@ -2,7 +2,6 @@
 '''Module for Device base class.'''
 
 import json
-import os
 import time
 from collections import namedtuple
 from pathlib import Path
@@ -14,8 +13,8 @@ class Device:
 
     def __init__(self, configPath: Path):
         self.configPath = configPath
-        self.name ='' # This will be set in getConfiguration
-        self.ipAddress = '0.0.0.0'
+        self.name = '' # This will be set in getConfiguration
+        self.ipAddress = '' # This will be set in getConfiguration
         self.futurePlan = []
         self.planExpiration = 0
         self.sensorMode = None
@@ -32,21 +31,10 @@ class Device:
         data = self.getConfiguration()
         return Temp(data['tempLow'], data['tempHigh'])
 
-    def setIpAddress(self) -> None:
-        '''Set IP address from environment variable.'''
-        defaultIp = '0.0.0.0'
-        name = self.configPath.stem
-        variable = 'ip_' + name
-        ipAddress = os.getenv(variable, defaultIp)
-        if ipAddress == defaultIp:
-            print('Varoitus! IP:tä ei löytynyt ympäristömuuttujana. ' \
-                  'Muista asettaa jokaiselle konfigurointitiedostolle ' \
-                  'sopiva IP ympäristömuuttujaksi')
-        self.ipAddress = ipAddress
-        print(f'Asetettiin ip {self.ipAddress} kohteelle {self.getName()}.')
-
     def getIpAddress(self) -> str:
         '''Get IP address.'''
+        if not self.ipAddress:
+            self.getConfiguration()
         return self.ipAddress
 
 
@@ -57,6 +45,7 @@ class Device:
         parsedData = json.loads(data)
         self.name = parsedData[0]['name']
         self.sensorMode = parsedData[0]['sensorMode']
+        self.ipAddress = parsedData[0]['ip']
         return parsedData[0]
 
     def getApiConfiguration(self) -> dict:

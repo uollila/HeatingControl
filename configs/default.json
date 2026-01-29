@@ -4,7 +4,8 @@
       "tempHigh": 22.0,
       "name": "default",
       "type": "thermostat",
-      "sensorMode": 2
+      "sensorMode": 2,
+      "ip": "0.0.0.0"
   },
   {
       "Region": "FI",
