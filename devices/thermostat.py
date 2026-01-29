@@ -4,7 +4,7 @@ import time
 
 import httpx
 
-from classes.device import Device # pylint: disable=import-error
+from devices.device import Device # pylint: disable=import-error
 
 class Thermostat(Device):
     '''Thermostat class inherits from Device class.'''

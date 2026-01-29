@@ -7,11 +7,12 @@ from pathlib import Path
 
 import schedule
 
-from classes.device import Device # pylint: disable=import-error
-from classes.panel import Panel # pylint: disable=import-error
-from classes.thermostat import Thermostat # pylint: disable=import-error
+from devices.device import Device # pylint: disable=import-error
+from devices.panel import Panel # pylint: disable=import-error
+from devices.thermostat import Thermostat # pylint: disable=import-error
+from devices.panasonic import Panasonic # pylint: disable=import-error
 
-def setHeating(target: Thermostat) -> None:
+def setHeating(target: Device) -> None:
     '''Set heating based on current status and api-spot-hinta.fi data.'''
     #Printataan perustiedot
     name = target.getName()
@@ -22,7 +23,7 @@ def setHeating(target: Thermostat) -> None:
     #Käydään hakemassa tämän hetkinen tilanne termarilta
     status = target.getCurrentStatus()
     if not status:
-        print('Termostaattiin ei saatu yhteyttä ja säätöä ei jatketa. Yritetään ' \
+        print('Laitteeseen ei saatu yhteyttä ja säätöä ei jatketa. Yritetään ' \
               'tunnin päästä uudelleen.')
         return
 
@@ -31,7 +32,7 @@ def setHeating(target: Thermostat) -> None:
     #Asetetaan lämmitys seuraavalle tunnille saatujen tietojen perusteella
     successful = target.adjustTempSetpoint(status, heating)
     if not successful:
-        print('Lämpötilan asettaminen termostaattiin epäonnistui.')
+        print('Lämpötilan asettaminen laitteeseen epäonnistui.')
     else:
         target.plotHistory()
 
@@ -50,6 +51,8 @@ def createObject(file: Path) -> Device:
             device = Panel(file)
         case 'thermostat':
             device = Thermostat(file)
+        case 'panasonic':
+            device = Panasonic(file)
         case _:
             print(f'Tiedostossa {file} on tuntematon laitetyyppi {deviceType}, objektia ei luoda.')
             return None

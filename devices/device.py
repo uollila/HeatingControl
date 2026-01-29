@@ -172,9 +172,9 @@ class Device:
                     responseJson = response.json()
                     self.printStatus(responseJson)
                 else:
-                    print(f'Termostaatti vastasi koodilla {response.status_code}')
+                    print(f'Laite vastasi koodilla {response.status_code}')
             except httpx.RequestError:
-                print(f'Termostaattiin ei saatu yhteyttä. Yritetään 5 sekunnin ' \
+                print(f'Laitteeseen ei saatu yhteyttä. Yritetään 5 sekunnin ' \
                       f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
                 time.sleep(5)
             else:
