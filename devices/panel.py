@@ -24,12 +24,12 @@ class Panel(Device):
         '''Plot history of panel data.'''
         print('\n\n')
 
-    def setTemp(self, newTemp: float, oldTemp: float) -> None:
+    def _setTemp(self, newTemp: float, oldTemp: float) -> bool:
         '''Set new temperature to device.'''
         if newTemp == oldTemp:
             print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
             return True
-        url = f'http://{self.getIpAddress()}/api/parameters?heatingSetpoint' \
+        url = f'http://{self._getIpAddress()}/api/parameters?heatingSetpoint' \
               f'={newTemp}&panelMode=1&sensorMode={self.sensorMode}'
         attempts = 5
         for attempt in range(attempts):

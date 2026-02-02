@@ -22,23 +22,23 @@ class Device:
     def getName(self) -> str:
         '''Get name of the device from configuration.'''
         if not self.name:
-            self.getConfiguration()
+            self._getConfiguration()
         return self.name
 
-    def getTemps(self) -> tuple[float, float]:
+    def _getTemps(self) -> tuple[float, float]:
         '''Get low and high temperature settings from configuration.'''
         Temp = namedtuple('Temp', 'low high')
-        data = self.getConfiguration()
+        data = self._getConfiguration()
         return Temp(data['tempLow'], data['tempHigh'])
 
-    def getIpAddress(self) -> str:
+    def _getIpAddress(self) -> str:
         '''Get IP address.'''
         if not self.ipAddress:
-            self.getConfiguration()
+            self._getConfiguration()
         return self.ipAddress
 
 
-    def getConfiguration(self) -> dict:
+    def _getConfiguration(self) -> dict:
         '''Read first part of configuration from file.'''
         with open(self.configPath, 'r', encoding='utf-8') as jsonFile:
             data = jsonFile.read()
@@ -48,27 +48,27 @@ class Device:
         self.ipAddress = parsedData[0]['ip']
         return parsedData[0]
 
-    def getApiConfiguration(self) -> dict:
+    def _getApiConfiguration(self) -> dict:
         '''Read second part of configuration from file.'''
         with open(self.configPath, 'r', encoding='utf-8') as jsonFile:
             data = jsonFile.read()
         parsedData = json.loads(data)
         return parsedData[1]
 
-    def getLocalTimeFromEpoch(self, epoch: int) -> str:
+    def _getLocalTimeFromEpoch(self, epoch: int) -> str:
         '''Convert epoch milliseconds to local time string.'''
         epochToLocal = time.localtime(epoch // 1000)
         strTimeLocal = time.strftime('%H:%M:%S (%a %d %b)', epochToLocal)
         return strTimeLocal
 
-    def getHeatingValuesFromFuturePlan(self, epoch: int) -> bool:
+    def _getHeatingValuesFromFuturePlan(self, epoch: int) -> bool:
         '''Get heating values from future plan.'''
         returnValue = False
         setDone = False
-        expirationLocalTime = self.getLocalTimeFromEpoch(self.planExpiration)
+        expirationLocalTime = self._getLocalTimeFromEpoch(self.planExpiration)
         print(f'Tuleva suunnitelma, joka vanhenee {expirationLocalTime}:')
         for item in self.futurePlan:
-            planTimeLocal = self.getLocalTimeFromEpoch(item['epochMs'])
+            planTimeLocal = self._getLocalTimeFromEpoch(item['epochMs'])
             if epoch > item['epochMs']and not setDone:
                 print(f'Aika: {planTimeLocal}, Lämmitystarve: {item['result']} (VOIMASSA NYT)')
                 returnValue = item['result']
@@ -79,7 +79,7 @@ class Device:
             print('Ei löytynyt sopivaa aikaväliä tulevasta suunnitelmasta, ' \
                   'käytetään backup-tunteja.')
             hour = time.localtime(epoch // 1000).tm_hour
-            backupHours = self.getApiConfiguration()['BackupHours']
+            backupHours = self._getApiConfiguration()['BackupHours']
             if hour in backupHours:
                 returnValue = True
         return returnValue
@@ -89,21 +89,21 @@ class Device:
         timestamp = time.time()
         timeMillis = int(timestamp * 1000)
         if timeMillis > self.planExpiration or not self.futurePlan:
-            gotNewPlan = self.getNewPlan()
+            gotNewPlan = self._getNewPlan()
             if not gotNewPlan:
                 print('api-spot-hinta.fi:stä ei saatu tarvittavia tietoja. ' \
                       'Käytetään asetettuja backup-tunteja.')
                 hour = time.localtime(timestamp).tm_hour
-                backupHours = self.getApiConfiguration()['BackupHours']
+                backupHours = self._getApiConfiguration()['BackupHours']
                 if hour in backupHours:
                     return True
                 return False
-        return self.getHeatingValuesFromFuturePlan(timeMillis)
+        return self._getHeatingValuesFromFuturePlan(timeMillis)
 
-    def getNewPlan(self) -> bool:
+    def _getNewPlan(self) -> bool:
         '''Get new heating plan from api-spot-hinta.fi.'''
         url = 'https://api.spot-hinta.fi/SmartHeating'
-        data = self.getApiConfiguration()
+        data = self._getApiConfiguration()
         attempts = 3
         gotResponse = False
         for attempt in range(attempts):
@@ -115,7 +115,7 @@ class Device:
                     self.futurePlan = responseJson['PlanAhead']
                     self.planExpiration = responseJson['EpochMsExpiration']
                     print(f'Saatiin uusi suunnitelma, voimasssa '
-                          f'{self.getLocalTimeFromEpoch(self.planExpiration)} asti.\n' \
+                          f'{self._getLocalTimeFromEpoch(self.planExpiration)} asti.\n' \
                           f'Vuorokauden keskilämpötila {responseJson['AverageTemperature']} C.')
                 else:
                     print(f'Saatiin koodi {response.status_code}. Päättele siitä.')
@@ -127,47 +127,31 @@ class Device:
                 return gotResponse
         return gotResponse
 
-    def setTemp(self, newTemp: float, oldTemp: float) -> None:
-        '''Set new temperature to device.'''
-        if newTemp == oldTemp:
-            print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
-            return True
-        url = f'http://{self.getIpAddress()}/api/parameters?heatingSetpoint' \
-              f'={newTemp}&operatingMode=1'
-        attempts = 5
-        for attempt in range(attempts):
-            try:
-                response = httpx.post(url)
-                if response.status_code == 200:
-                    responseJson = response.json()
-                    print(f'Termostaatiin asetettiin uusi lämpötila ' \
-                          f'{responseJson['heatingSetpoint']} astetta.')
-                else:
-                    print(f'Termostaatti vastasi koodilla {response.status_code}')
-            except httpx.RequestError:
-                print(f'Termostaattiin ei saatu yhteyttä. Yritetään 5 sekunnin ' \
-                      f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
-                time.sleep(5)
-            else:
-                return True
-        return False
+    def _getCurrentTemperature(self, status: dict) -> float:
+        '''Get current temperature from status dictionary.'''
+        return status['parameters']['heatingSetpoint']
 
     def adjustTempSetpoint(self, status: dict, heating: bool) -> None:
         '''Adjust temperature setpoint based on current status and heating demand.'''
-        temps = self.getTemps()
-        currentTemp = status['parameters']['heatingSetpoint']
+        temps = self._getTemps()
+        currentTemp = self._getCurrentTemperature(status)
         if heating: #heating on
-            return self.setTemp(temps.high, currentTemp)
-        return self.setTemp(temps.low, currentTemp)
+            return self._setTemp(temps.high, currentTemp)
+        return self._setTemp(temps.low, currentTemp)
+
+    def _getStatusResponse(self) -> httpx.Response:
+        '''Get response for status query from device.'''
+        url = 'http://' + self._getIpAddress() + '/api/status'
+        response = httpx.get(url)
+        return response
 
     def getCurrentStatus(self) -> dict:
         '''Get current status from device.'''
-        url = 'http://' + self.getIpAddress() + '/api/status'
         attempts = 5
         responseJson = None
         for attempt in range(attempts):
             try:
-                response = httpx.get(url)
+                response = self._getStatusResponse()
                 if response.status_code == 200:
                     responseJson = response.json()
                     self.printStatus(responseJson)
@@ -180,6 +164,11 @@ class Device:
             else:
                 return responseJson
         return responseJson
+
+    def _setTemp(self, newTemp: float, oldTemp: float) -> bool:
+        '''Set new temperature to device.'''
+        # This should be implemented in subclasses
+        raise NotImplementedError
 
     def plotHistory(self) -> None:
         '''Plot history of temperature changes.'''
