@@ -15,11 +15,14 @@ class Thermostat(Device):
 
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the thermostat.'''
-        print(f'Termostaatin tämän hetken asetettu ' \
-              f'lämpötila {responseJson['parameters']['heatingSetpoint']} C.')
-        print(f'Status: {responseJson['state']}, huone: ' \
-              f'{responseJson['internalTemperature']} C, ' \
-              f'lattia: {responseJson['floorTemperature']} C')
+        try:
+            print(f'Termostaatin tämän hetken asetettu ' \
+                f'lämpötila {responseJson['parameters']['heatingSetpoint']} C.')
+            print(f'Status: {responseJson['state']}, huone: ' \
+                f'{responseJson['internalTemperature']} C, ' \
+                f'lattia: {responseJson['floorTemperature']} C')
+        except KeyError:
+            print("Error: Could not retrieve status information from response.")
 
     def plotHistory(self) -> None:
         '''Plot history of thermostat data.'''

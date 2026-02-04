@@ -17,10 +17,13 @@ class Panasonic(Device):
 
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the Panasonic heat pump.'''
-        print(f'Panasonic lämpöpumpun tämän hetken asetettu ' \
-              f'lämpötila {responseJson['attributes']['temperature']} C. ' \
-              f'Huoneen lämpötila on ' \
-              f'{responseJson['attributes']['current_temperature']} C. ')
+        try:
+            print(f'Panasonic lämpöpumpun tämän hetken asetettu ' \
+                  f'lämpötila {responseJson["attributes"]["temperature"]} C. ' \
+                  f'Huoneen lämpötila on ' \
+                  f'{responseJson["attributes"]["current_temperature"]} C. ')
+        except KeyError:
+            print("Error: Could not retrieve status information from response.")
 
     def plotHistory(self) -> None:
         '''Plot history of panel data.'''

@@ -15,10 +15,13 @@ class Panel(Device):
 
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the panel.'''
-        print(f'Patterin tämän hetken asetettu lämpötila ' \
-              f'{responseJson['parameters']['heatingSetpoint']} C')
-        print(f'Status: {responseJson['state']}, Huone: ' \
-              f'{responseJson['roomTemperature']} C')
+        try:
+            print(f'Patterin tämän hetken asetettu lämpötila ' \
+                f'{responseJson['parameters']['heatingSetpoint']} C')
+            print(f'Status: {responseJson['state']}, Huone: ' \
+                f'{responseJson['roomTemperature']} C')
+        except KeyError:
+            print("Error: Could not retrieve status information from response.")
 
     def plotHistory(self):
         '''Plot history of panel data.'''
