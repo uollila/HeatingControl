@@ -11,7 +11,7 @@ class HomeAssistantClient:
             "Content-Type": "application/json",
         }
 
-    def getState(self, entityId: str) -> httpx.Response:
+    def getStatus(self, entityId: str) -> httpx.Response:
         '''Get state of an entity from Home Assistant.'''
         url = f"{self.baseUrl}/api/states/{entityId}"
         response = httpx.get(url, headers=self.headers, timeout=10)

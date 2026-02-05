@@ -17,13 +17,10 @@ class Panasonic(Device):
 
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the Panasonic heat pump.'''
-        try:
-            print(f'Panasonic lämpöpumpun tämän hetken asetettu ' \
-                  f'lämpötila {responseJson["attributes"]["temperature"]} C. ' \
-                  f'Huoneen lämpötila on ' \
-                  f'{responseJson["attributes"]["current_temperature"]} C. ')
-        except KeyError:
-            print("Error: Could not retrieve status information from response.")
+        print(f'Panasonic lämpöpumpun tämän hetken asetettu ' \
+                f'lämpötila {responseJson["attributes"]["temperature"]} C. ' \
+                f'Huoneen lämpötila on ' \
+                f'{responseJson["attributes"]["current_temperature"]} C. ')
 
     def plotHistory(self) -> None:
         '''Plot history of panel data.'''
@@ -54,9 +51,21 @@ class Panasonic(Device):
             return False
         return True
 
+    def _checkValidResponse(self, response: httpx.Response) -> None:
+        '''Check if the response from Home Assistant is valid.'''
+        if response.status_code != 200:
+            raise httpx.RequestError(f'Home Assistant vastasi koodilla {response.status_code}')
+        try:
+            gotResponse = response.json()
+            _ = self._getCurrentTemperature(gotResponse)
+        except KeyError as exc:
+            raise httpx.RequestError('Ei validia JSONia') from exc
+
     def _getStatusResponse(self) -> httpx.Response:
         '''Get response for status query from device.'''
-        return self.client.getState(self.ipAddress)
+        response = self.client.getStatus(self.ipAddress)
+        self._checkValidResponse(response)
+        return response
 
     def _getCurrentTemperature(self, status: dict) -> float:
         '''Get current temperature from status dictionary.'''

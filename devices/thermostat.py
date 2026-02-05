@@ -38,7 +38,7 @@ class Thermostat(Device):
         attempts = 5
         for attempt in range(attempts):
             try:
-                response = httpx.post(url)
+                response = httpx.post(url, timeout=10)
                 if response.status_code == 200:
                     responseJson = response.json()
                     print(f'Termostaatiin asetettiin uusi lämpötila ' \

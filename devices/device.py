@@ -108,7 +108,7 @@ class Device:
         gotResponse = False
         for attempt in range(attempts):
             try:
-                response = httpx.post(url, json=data)
+                response = httpx.post(url, json=data, timeout=20)
                 if response.status_code == 200:
                     gotResponse = True
                     responseJson = response.json()

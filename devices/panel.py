@@ -37,7 +37,7 @@ class Panel(Device):
         attempts = 5
         for attempt in range(attempts):
             try:
-                response = httpx.post(url)
+                response = httpx.post(url, tiemout=10)
                 if response.status_code == 200:
                     responseJson = response.json()
                     print(f'Patteriin asetettiin uusi lämpötila ' \
