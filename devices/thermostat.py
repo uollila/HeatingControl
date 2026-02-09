@@ -45,8 +45,8 @@ class Thermostat(Device):
                           f'{responseJson['heatingSetpoint']} astetta.')
                 else:
                     print(f'Termostaatti vastasi koodilla {response.status_code}')
-            except httpx.RequestError:
-                print(f'Termostaattiin ei saatu yhteyttä. Yritetään 5 sekunnin ' \
+            except (httpx.RequestError, httpx.HTTPStatusError) as err:
+                print(f'Termostaattiin ei saatu yhteyttä, virhe: {err}. Yritetään 5 sekunnin ' \
                       f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
                 time.sleep(5)
             else:

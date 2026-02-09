@@ -45,7 +45,7 @@ class Panasonic(Device):
         try:
             self.client.setTemperature(self.ipAddress, newTemp)
             print(f'Panasonic lämpöpumppuun asetettiin uusi lämpötila {newTemp} astetta.')
-        except httpx.RequestError as err:
+        except (httpx.RequestError, httpx.HTTPStatusError) as err:
             print(f'Lämpötilan asettaminen Panasonic lämpöpumppuun epäonnistui. '
                   f'Syy: {err}')
             return False

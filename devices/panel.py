@@ -44,8 +44,8 @@ class Panel(Device):
                           f'{responseJson['heatingSetpoint']} astetta.')
                 else:
                     print(f'Patteri vastasi koodilla {response.status_code}')
-            except httpx.RequestError:
-                print(f'Patteriin ei saatu yhteyttä. Yritetään 5 sekunnin ' \
+            except (httpx.RequestError, httpx.HTTPStatusError) as err:
+                print(f'Patteriin ei saatu yhteyttä, virhe: {err}. Yritetään 5 sekunnin ' \
                       f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
                 time.sleep(5)
             else:

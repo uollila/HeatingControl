@@ -119,8 +119,8 @@ class Device:
                           f'Vuorokauden keskilämpötila {responseJson['AverageTemperature']} C.')
                 else:
                     print(f'Saatiin koodi {response.status_code}. Päättele siitä.')
-            except httpx.RequestError:
-                print(f'api-spot-hinta.fi ei vastannut. Yritetään 10 sekunnin ' \
+            except (httpx.RequestError, httpx.HTTPStatusError) as err:
+                print(f'api-spot-hinta.fi ei vastannut, virhe: {err}. Yritetään 10 sekunnin ' \
                       f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
                 time.sleep(10)
             else:
@@ -157,8 +157,8 @@ class Device:
                     self.printStatus(responseJson)
                 else:
                     print(f'Laite vastasi koodilla {response.status_code}')
-            except httpx.RequestError:
-                print(f'Laitteeseen ei saatu yhteyttä. Yritetään 5 sekunnin ' \
+            except (httpx.RequestError, httpx.HTTPStatusError) as err:
+                print(f'Laitteeseen ei saatu yhteyttä, virhe: {err}. Yritetään 5 sekunnin ' \
                       f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
                 time.sleep(5)
             else:
