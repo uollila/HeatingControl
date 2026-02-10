@@ -10,7 +10,7 @@ import schedule
 from devices.device import Device # pylint: disable=import-error
 from devices.panel import Panel # pylint: disable=import-error
 from devices.thermostat import Thermostat # pylint: disable=import-error
-from devices.panasonic import Panasonic # pylint: disable=import-error
+from devices.heatpump import HeatPump # pylint: disable=import-error
 
 def setHeating(target: Device) -> None:
     '''Set heating based on current status and api-spot-hinta.fi data.'''
@@ -51,8 +51,8 @@ def createObject(file: Path) -> Device:
             device = Panel(file)
         case 'thermostat':
             device = Thermostat(file)
-        case 'panasonic':
-            device = Panasonic(file)
+        case 'heatpump':
+            device = HeatPump(file)
         case _:
             print(f'Tiedostossa {file} on tuntematon laitetyyppi {deviceType}, objektia ei luoda.')
             return None
