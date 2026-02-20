@@ -17,10 +17,12 @@ class HeatPump(Device):
 
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the heat pump.'''
-        print(f'Ilmalämpöpumpun tämän hetken asetettu ' \
-                f'lämpötila {responseJson["attributes"]["temperature"]} C. ' \
-                f'Huoneen lämpötila on ' \
-                f'{responseJson["attributes"]["current_temperature"]} C. ')
+        try:
+            currentTemp = responseJson["attributes"]["current_temperature"]
+            setTemp = responseJson["attributes"]["temperature"]
+            self.printTemps(setTemp, currentTemp)
+        except KeyError:
+            print("Error: Could not retrieve status information from response.")
 
     def plotHistory(self) -> None:
         '''Plot history of heat pump data.'''
@@ -37,19 +39,9 @@ class HeatPump(Device):
         client = HomeAssistantClient(url, token)
         return client
 
-    def _setTemp(self, newTemp: float, oldTemp: float) -> bool:
-        '''Set new temperature to device.'''
-        if newTemp == oldTemp:
-            print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
-            return True
-        try:
-            self.client.setTemperature(self.ipAddress, newTemp)
-            print(f'Ilmalämpöpumppuun asetettiin uusi lämpötila {newTemp} astetta.')
-        except (httpx.RequestError, httpx.HTTPStatusError) as err:
-            print(f'Lämpötilan asettaminen ilmalämpöpumppuun epäonnistui. '
-                  f'Syy: {err}')
-            return False
-        return True
+    def sendTempToDevice(self, newTemp: float) -> httpx.Response:
+        '''Send new temperature to heat pump.'''
+        return self.client.setTemperature(self.ipAddress, newTemp)
 
     def _checkValidResponse(self, response: httpx.Response) -> None:
         '''Check if the response from Home Assistant is valid.'''

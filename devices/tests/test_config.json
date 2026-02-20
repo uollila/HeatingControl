@@ -1,0 +1,38 @@
+[
+  {
+      "tempLow": 18.0,
+      "tempHigh": 22.0,
+      "name": "default",
+      "type": "thermostat",
+      "sensorMode": 2,
+      "ip": "0.0.0.0"
+  },
+  {
+      "Region": "FI",
+      "RelayName": "default",
+      "RelayNumbers": [
+        0
+      ],
+      "Inverted": false,
+      "PostalCode": "02210",
+      "Latitude": "60.000",
+      "Longitude": "24.000",
+      "HeatingSegments_PerDay": 4,
+      "MinimumHeatingTime": 30,
+      "HeatingPercentage_Plus30": 0,
+      "HeatingPercentage_Plus20": 10,
+      "HeatingPercentage_Plus10": 20,
+      "HeatingPercentage_Zero": 40,
+      "HeatingPercentage_Minus10": 60,
+      "HeatingPercentage_Minus20": 80,
+      "HeatingPercentage_Minus30": 80,
+      "HeatingReductionPrice": "15.0",
+      "HeatingReductionPercentage": 50,
+      "NightHours": [22, 23, 0, 1, 2, 3, 4, 5, 6],
+      "PriceDifference": -1.43,
+      "PriceDifference_Months": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+      "PriceDifference_Days": [1, 2, 3, 4, 5, 6, 7],
+      "PriceAlwaysAllowed": 1,
+      "BackupHours": [0, 1, 2, 3, 4, 5, 6, 21, 22, 23]
+    }
+]

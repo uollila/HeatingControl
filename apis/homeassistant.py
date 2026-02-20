@@ -18,7 +18,7 @@ class HomeAssistantClient:
         response.raise_for_status()
         return response
 
-    def setTemperature(self, entityId: str, temperature: float) -> None:
+    def setTemperature(self, entityId: str, temperature: float) -> httpx.Response:
         '''Set temperature of a climate entity in Home Assistant.'''
         url = f"{self.baseUrl}/api/services/climate/set_temperature"
         payload = {
@@ -27,6 +27,7 @@ class HomeAssistantClient:
         }
         r = httpx.post(url, headers=self.headers, json=payload, timeout=10)
         r.raise_for_status()
+        return r
 
     def turnOn(self, entityId: str) -> None:
         '''Turn on a climate entity in Home Assistant.'''

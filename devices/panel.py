@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 '''Module for Panel class.'''
-import time
 
 import httpx
 
@@ -16,38 +15,19 @@ class Panel(Device):
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the panel.'''
         try:
-            print(f'Patterin tämän hetken asetettu lämpötila ' \
-                f'{responseJson['parameters']['heatingSetpoint']} C')
-            print(f'Status: {responseJson['state']}, Huone: ' \
-                f'{responseJson['roomTemperature']} C')
+            setTemp = responseJson['parameters']['heatingSetpoint']
+            currentTemp = responseJson["roomTemperature"]
+            self.printTemps(setTemp, currentTemp)
         except KeyError:
-            print("Error: Could not retrieve status information from response.")
+            print('Ei saatu kunnon vastausta patterilta.')
 
     def plotHistory(self):
         '''Plot history of panel data.'''
         print('\n\n')
 
-    def _setTemp(self, newTemp: float, oldTemp: float) -> bool:
-        '''Set new temperature to device.'''
-        if newTemp == oldTemp:
-            print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
-            return True
-        url = f'http://{self._getIpAddress()}/api/parameters?heatingSetpoint' \
+    def sendTempToDevice(self, newTemp: float) -> httpx.Response:
+        '''Send new temperature to panel.'''
+        url = f'http://{self.getIpAddress()}/api/parameters?heatingSetpoint' \
               f'={newTemp}&panelMode=1&sensorMode={self.sensorMode}'
-        attempts = 5
-        for attempt in range(attempts):
-            try:
-                response = httpx.post(url, timeout=10)
-                if response.status_code == 200:
-                    responseJson = response.json()
-                    print(f'Patteriin asetettiin uusi lämpötila ' \
-                          f'{responseJson['heatingSetpoint']} astetta.')
-                else:
-                    print(f'Patteri vastasi koodilla {response.status_code}')
-            except (httpx.RequestError, httpx.HTTPStatusError) as err:
-                print(f'Patteriin ei saatu yhteyttä, virhe: {err}. Yritetään 5 sekunnin ' \
-                      f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
-                time.sleep(5)
-            else:
-                return True
-        return False
+        response = httpx.post(url, timeout=10)
+        return response

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 '''Module for Thermostat class.'''
-import time
 
 import httpx
 
@@ -16,39 +15,20 @@ class Thermostat(Device):
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the thermostat.'''
         try:
-            print(f'Termostaatin tämän hetken asetettu ' \
-                f'lämpötila {responseJson['parameters']['heatingSetpoint']} C.')
-            print(f'Status: {responseJson['state']}, huone: ' \
-                f'{responseJson['internalTemperature']} C, ' \
-                f'lattia: {responseJson['floorTemperature']} C')
+            setTemp = responseJson['parameters']['heatingSetpoint']
+            currentTemp = responseJson['internalTemperature']
+            self.printTemps(setTemp, currentTemp)
+            print(f'lattia: {responseJson['floorTemperature']} C')
         except KeyError:
-            print("Error: Could not retrieve status information from response.")
+            print('Ei saatu kunnon vastausta termostaatilta.')
 
     def plotHistory(self) -> None:
         '''Plot history of thermostat data.'''
         print('\n\n')
 
-    def _setTemp(self, newTemp: float, oldTemp: float) -> bool:
-        '''Set new temperature to device.'''
-        if newTemp == oldTemp:
-            print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
-            return True
-        url = f'http://{self._getIpAddress()}/api/parameters?heatingSetpoint' \
+    def sendTempToDevice(self, newTemp: float) -> httpx.Response:
+        '''Send new temperature to thermostat.'''
+        url = f'http://{self.getIpAddress()}/api/parameters?heatingSetpoint' \
               f'={newTemp}&operatingMode=1&sensorMode={self.sensorMode}'
-        attempts = 5
-        for attempt in range(attempts):
-            try:
-                response = httpx.post(url, timeout=10)
-                if response.status_code == 200:
-                    responseJson = response.json()
-                    print(f'Termostaatiin asetettiin uusi lämpötila ' \
-                          f'{responseJson['heatingSetpoint']} astetta.')
-                else:
-                    print(f'Termostaatti vastasi koodilla {response.status_code}')
-            except (httpx.RequestError, httpx.HTTPStatusError) as err:
-                print(f'Termostaattiin ei saatu yhteyttä, virhe: {err}. Yritetään 5 sekunnin ' \
-                      f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
-                time.sleep(5)
-            else:
-                return True
-        return False
+        response = httpx.post(url, timeout=10)
+        return response

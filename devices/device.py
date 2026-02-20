@@ -31,7 +31,7 @@ class Device:
         data = self._getConfiguration()
         return Temp(data['tempLow'], data['tempHigh'])
 
-    def _getIpAddress(self) -> str:
+    def getIpAddress(self) -> str:
         '''Get IP address.'''
         if not self.ipAddress:
             self._getConfiguration()
@@ -141,7 +141,7 @@ class Device:
 
     def _getStatusResponse(self) -> httpx.Response:
         '''Get response for status query from device.'''
-        url = 'http://' + self._getIpAddress() + '/api/status'
+        url = 'http://' + self.getIpAddress() + '/api/status'
         response = httpx.get(url)
         return response
 
@@ -167,8 +167,26 @@ class Device:
 
     def _setTemp(self, newTemp: float, oldTemp: float) -> bool:
         '''Set new temperature to device.'''
-        # This should be implemented in subclasses
-        raise NotImplementedError
+        if newTemp == oldTemp:
+            print(f'Ei tarvetta muuttaa lämpötilaa! Vanha ja uusi on samat {oldTemp} astetta.')
+            return True
+        attempts = 5
+        for attempt in range(attempts):
+            try:
+                response = self.sendTempToDevice(newTemp)
+                if response.status_code == 200:
+                    responseJson = response.json()
+                    print(f'Laitteeseen asetettiin uusi lämpötila ' \
+                          f'{responseJson['heatingSetpoint']} astetta.')
+                else:
+                    print(f'Laite vastasi koodilla {response.status_code}')
+            except (httpx.RequestError, httpx.HTTPStatusError) as err:
+                print(f'Laitteeseen ei saatu yhteyttä, virhe: {err}. Yritetään 5 sekunnin ' \
+                      f'päästä uudelleen. Yritys {attempt + 1} / {attempts}')
+                time.sleep(5)
+            else:
+                return True
+        return False
 
     def plotHistory(self) -> None:
         '''Plot history of temperature changes.'''
@@ -176,6 +194,16 @@ class Device:
         raise NotImplementedError
 
     def printStatus(self, responseJson: dict) -> None:
-        '''Print current status.'''
+        ''''Print current status of the device.'''
         # This should be implemented in subclasses
         raise NotImplementedError
+
+    def sendTempToDevice(self, newTemp: float) -> httpx.Response:
+        '''Send new temperature to device.'''
+        # This should be implemented in subclasses
+        raise NotImplementedError
+
+    def printTemps(self, setTemp: float, currentTemp: float) -> None:
+        '''Print current temperature status.'''
+        print(f'Laitteen tämän hetken asetettu lämpötila {setTemp} C. ' \
+                f'Huoneen lämpötila on {currentTemp} C. ')
