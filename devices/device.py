@@ -175,9 +175,7 @@ class Device:
             try:
                 response = self.sendTempToDevice(newTemp)
                 if response.status_code == 200:
-                    responseJson = response.json()
-                    print(f'Laitteeseen asetettiin uusi lämpötila ' \
-                          f'{responseJson['heatingSetpoint']} astetta.')
+                    print(f'Laitteeseen asetettiin uusi lämpötila {newTemp} astetta.')
                 else:
                     print(f'Laite vastasi koodilla {response.status_code}')
             except (httpx.RequestError, httpx.HTTPStatusError) as err:
