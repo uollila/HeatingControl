@@ -80,6 +80,16 @@ class TestConfigWebServer(unittest.TestCase):
             with urlopen(f'{self.baseUrl}/api/config?file=device.json') as response:
                 self.assertEqual(json.loads(response.read())['content'], '[\n  {},\n  {}\n]\n')
 
+    def testEditorPageContainsFiles(self):
+        '''Test that the initial HTML contains configuration file options.'''
+        with patch('builtins.print'):
+            with urlopen(self.baseUrl) as response:
+                page = response.read().decode('utf-8')
+        self.assertIn('value="device.json"', page)
+        self.assertIn('<textarea id="content" spellcheck="false">[\n  {},\n  {}\n]\n</textarea>',
+                      page)
+        self.assertIn('<input id="enabled" type="checkbox" checked>', page)
+
     def testPutEndpoint(self):
         '''Test saving a configuration over HTTP.'''
         body = json.dumps({'content': '[{"type": "panel"}, {}]'}).encode('utf-8')

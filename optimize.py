@@ -82,7 +82,8 @@ def main() -> None:
     devices = []
     # Luodaan objektit jokaiselle ohjattavalle kohteelle. Annetaan nimet ja IP-osoitteet
     devices = readConfigs(devices)
-    startConfigServer()
+    configDir = Path(__file__).resolve().parent / 'configs'
+    startConfigServer(config_dir=configDir)
     #Ajastetaan säätöfunktio jokaiselle kohteelle
     baseTime = 10
     for device in devices:

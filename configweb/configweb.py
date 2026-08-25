@@ -2,6 +2,7 @@
 '''Web editor for device configuration files.'''
 
 import json
+import html
 import os
 import tempfile
 from http import HTTPStatus
@@ -34,59 +35,71 @@ EDITOR_HTML = '''<!doctype html>
   <p id="message" role="status"></p>
   <textarea id="content" spellcheck="false"></textarea>
   <script>
-    const file = document.getElementById('file');
-    const enabled = document.getElementById('enabled');
-    const content = document.getElementById('content');
-    const message = document.getElementById('message');
-    async function request(url, options) {
-      const response = await fetch(url, {...options, cache: 'no-store'});
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Pyyntö epäonnistui');
-      return data;
+    var file = document.getElementById('file');
+    var enabled = document.getElementById('enabled');
+    var content = document.getElementById('content');
+    var message = document.getElementById('message');
+    function showError(error) { message.textContent = 'Virhe: ' + error.message; }
+    function request(url, options) {
+      options = options || {};
+      options.cache = 'no-store';
+      return fetch(url, options).then(function (response) {
+        return response.json().then(function (data) {
+          if (!response.ok) { throw new Error(data.error || 'Pyyntö epäonnistui'); }
+          return data;
+        });
+      });
     }
-    async function loadFiles() {
-      const data = await request('/api/configs');
-      file.textContent = '';
-      data.files.forEach(name => {
-        const option = document.createElement('option');
+    function rebuildFileList(files) {
+      file.innerHTML = '';
+      files.forEach(function (name) {
+        var option = document.createElement('option');
         option.value = name;
         option.textContent = name;
         file.appendChild(option);
       });
-      if (file.value) await loadFile();
-    }
-    async function loadFile() {
-      if (!file.value) return;
-      const data = await request('/api/config?file=' + encodeURIComponent(file.value));
-      content.value = data.content;
-      updateEnabled();
-      message.textContent = 'Tiedosto ladattu.';
     }
     function updateEnabled() {
-      const config = JSON.parse(content.value);
-      enabled.checked = config[0].enabled !== false;
-    }
-    enabled.addEventListener('change', () => {
       try {
-        const config = JSON.parse(content.value);
-        config[0].enabled = enabled.checked;
-        content.value = JSON.stringify(config, null, 2) + '\n';
-      } catch (error) { showError(error); }
-    });
-    async function saveFile() {
-      if (!file.value) return;
-      const data = await request('/api/config?file=' + encodeURIComponent(file.value), {
+        var config = JSON.parse(content.value);
+        enabled.checked = config[0].enabled !== false;
+      } catch (error) {
+        enabled.checked = true;
+      }
+    }
+    function loadFile() {
+      if (!file.value) { return; }
+      request('/api/config?file=' + encodeURIComponent(file.value)).then(function (data) {
+        content.value = data.content;
+        updateEnabled();
+        message.textContent = 'Tiedosto ladattu.';
+      }).catch(showError);
+    }
+    function saveFile() {
+      if (!file.value) { return; }
+      request('/api/config?file=' + encodeURIComponent(file.value), {
         method: 'PUT', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({content: content.value})
-      });
-      content.value = data.content;
-      message.textContent = 'Tiedosto tallennettu.';
+      }).then(function (data) {
+        content.value = data.content;
+        updateEnabled();
+        message.textContent = 'Tiedosto tallennettu.';
+      }).catch(showError);
     }
+    enabled.addEventListener('change', function () {
+      try {
+        var config = JSON.parse(content.value);
+        config[0].enabled = enabled.checked;
+        content.value = JSON.stringify(config, null, 2) + '\\n';
+      } catch (error) { showError(error); }
+    });
     file.addEventListener('change', loadFile);
-    document.getElementById('load').addEventListener('click', () => loadFile().catch(showError));
-    document.getElementById('save').addEventListener('click', () => saveFile().catch(showError));
-    function showError(error) { message.textContent = 'Virhe: ' + error.message; }
-    loadFiles().catch(showError);
+    document.getElementById('load').addEventListener('click', loadFile);
+    document.getElementById('save').addEventListener('click', saveFile);
+    request('/api/configs').then(function (data) {
+      rebuildFileList(data.files);
+      if (file.value) { loadFile(); }
+    }).catch(showError);
   </script>
 </body>
 </html>'''
@@ -183,7 +196,29 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         try:
             if parsed.path == '/':
-                payload = EDITOR_HTML.encode('utf-8')
+                files = self.store.listFiles()
+                options = ''.join(
+                    f'<option value="{html.escape(filename, quote=True)}">'
+                    f'{html.escape(filename)}</option>'
+                    for filename in files)
+                initial_content = ''
+                initial_enabled = True
+                if files:
+                    try:
+                        initial_content = self.store.read(files[0])
+                        initial_enabled = json.loads(initial_content)[0].get('enabled', True) \
+                            is not False
+                    except (ValueError, OSError):
+                        initial_content = ''
+                page = EDITOR_HTML.replace('<select id="file"></select>',
+                                           f'<select id="file">{options}</select>')
+                page = page.replace('<textarea id="content" spellcheck="false"></textarea>',
+                                    '<textarea id="content" spellcheck="false">'
+                                    f'{html.escape(initial_content)}</textarea>')
+                if initial_enabled:
+                    page = page.replace('<input id="enabled" type="checkbox">',
+                                        '<input id="enabled" type="checkbox" checked>')
+                payload = page.encode('utf-8')
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Cache-Control', 'no-store')
@@ -248,5 +283,6 @@ def startConfigServer(host: str | None = None, port: int | None = None,
     server = ThreadingHTTPServer((listen_host, listen_port), handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    print(f'Web-muokkain käynnistetty osoitteessa http://{listen_host}:{server.server_port}')
+    print(f'Web-muokkain käynnistetty osoitteessa http://{listen_host}:{server.server_port}. '
+          f'Asetushakemisto: {store.config_dir}, tiedostoja: {len(store.listFiles())}.')
     return server, thread
