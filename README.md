@@ -32,10 +32,13 @@ export HA_TOKEN="<long-lived access token>"
 python optimize.py
 ```
 
-The configuration editor is available at `http://127.0.0.1:8080/` while the
-service is running. The listener is local-only by default. Set
+The configuration editor is available on port `8124` while the service is
+running. The listener binds to all interfaces by default. Open
+`http://<computer-ip>:8124/`, where `<computer-ip>` is the computer's address
+on the local network. Set
 `CONFIG_WEB_HOST` and `CONFIG_WEB_PORT` before starting the service to change
-the listening address or port. Do not expose the editor outside a trusted
+the listening address or port. For local-only access, set
+`CONFIG_WEB_HOST=127.0.0.1`. Do not expose the editor outside a trusted
 network; it has no authentication.
 
 The service runs in the foreground; run it under systemd, tmux/screen or

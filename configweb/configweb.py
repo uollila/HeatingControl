@@ -208,8 +208,8 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
 def startConfigServer(host: str | None = None, port: int | None = None,
                       config_dir: str | Path = 'configs') -> tuple[ThreadingHTTPServer, Thread]:
     '''Start the configuration editor in a daemon thread.'''
-    listen_host = host or os.getenv('CONFIG_WEB_HOST', '127.0.0.1')
-    listen_port = port if port is not None else int(os.getenv('CONFIG_WEB_PORT', '8080'))
+    listen_host = host or os.getenv('CONFIG_WEB_HOST', '0.0.0.0')
+    listen_port = port if port is not None else int(os.getenv('CONFIG_WEB_PORT', '8124'))
     store = ConfigStore(config_dir)
     handler = type('ConfiguredConfigRequestHandler', (ConfigRequestHandler,),
                    {'store': store})
