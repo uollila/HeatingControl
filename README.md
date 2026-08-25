@@ -60,6 +60,8 @@ The service runs in the foreground; run it under systemd, tmux/screen or
 ## Configuration overview
 
 - First object in the JSON: local device settings — name, IP, type, tempLow, tempHigh, sensorMode, etc.
+- Set `enabled` to `false` in the first object to disable automatic adjustment for a device. If
+  omitted, it defaults to `true`. The web editor also provides an "Säätö aktiivinen" checkbox.
 - Second object: API parameters used to request a heating plan from <https://api.spot-hinta.fi/SmartHeating>.
 - `configs/default.json` is only a template and is never controlled. Every other `*.json`
   found under `configs/` is loaded and scheduled.

@@ -17,6 +17,9 @@ def setHeating(target: Device) -> None:
     '''Set heating based on current status and api-spot-hinta.fi data.'''
     #Printataan perustiedot
     name = target.getName()
+    if not target.isEnabled():
+        print(f'Kohteen {name} säätö ei ole aktiivinen, säätöä ei tehdä.')
+        return
     timestamp = time.localtime(time.time())
     strTime = time.strftime('%H:%M:%S (%a %d %b)', timestamp)
     print(f'Kello on {strTime}. Asetetaan säädöt kohteeseen: {name}')
@@ -62,7 +65,7 @@ def createObject(file: Path) -> Device | None:
 def readConfigs(devices: list) -> list[Device]:
     '''Read configuration files and create device objects.'''
     devices.clear()
-    configPath = 'configs/'
+    configPath = Path(__file__).resolve().parent / 'configs'
     filelist = Path(configPath).rglob('*.json')
     for file in filelist:
         if 'default.json' in str(file):
@@ -79,6 +82,7 @@ def main() -> None:
     devices = []
     # Luodaan objektit jokaiselle ohjattavalle kohteelle. Annetaan nimet ja IP-osoitteet
     devices = readConfigs(devices)
+    startConfigServer()
     #Ajastetaan säätöfunktio jokaiselle kohteelle
     baseTime = 10
     for device in devices:
@@ -90,7 +94,6 @@ def main() -> None:
     # Ajetaan jokaiselle laitteelle yksi säätö heti käynnistyksessä.
     for device in devices:
         setHeating(device)
-    startConfigServer()
     while True:
         schedule.run_pending()
         time.sleep(30)

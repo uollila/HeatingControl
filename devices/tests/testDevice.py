@@ -27,6 +27,15 @@ class TestDevice(unittest.TestCase):
         '''Test that ip address is read from configuration.'''
         self.assertEqual(self.device.getIpAddress(), '0.0.0.0')
 
+    def testIsEnabledDefaultsToTrue(self):
+        '''Test that configurations without enabled remain active.'''
+        self.assertTrue(self.device.isEnabled())
+
+    def testIsEnabledReadsFalse(self):
+        '''Test that disabled configuration is recognized.'''
+        with patch.object(Device, '_getConfiguration', return_value={'enabled': False}):
+            self.assertFalse(self.device.isEnabled())
+
     @patch('builtins.print')
     @patch.object(Device, 'sendTempToDevice')
     def testAdjustTempSetpointHeatingOn(self, mockSend, mockPrint):

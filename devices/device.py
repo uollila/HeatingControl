@@ -25,6 +25,10 @@ class Device:
             self._getConfiguration()
         return self.name
 
+    def isEnabled(self) -> bool:
+        '''Check whether automatic adjustment is enabled for this device.'''
+        return self._getConfiguration().get('enabled', True)
+
     def _getTemps(self) -> tuple[float, float]:
         '''Get low and high temperature settings from configuration.'''
         Temp = namedtuple('Temp', 'low high')

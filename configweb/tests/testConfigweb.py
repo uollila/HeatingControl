@@ -44,6 +44,8 @@ class TestConfigStore(unittest.TestCase):
             self.store.write('device.json', '{')
         with self.assertRaises(ValueError):
             self.store.write('device.json', '{}')
+        with self.assertRaises(ValueError):
+            self.store.write('device.json', '[{"enabled": "yes"}, {}]')
 
     def testRejectsPathTraversal(self):
         '''Test that paths outside configs cannot be accessed.'''

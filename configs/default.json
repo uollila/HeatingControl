@@ -2,6 +2,7 @@
   {
       "tempLow": 18.0,
       "tempHigh": 22.0,
+      "enabled": true,
       "name": "default",
       "type": "thermostat",
       "sensorMode": 2,

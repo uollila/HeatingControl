@@ -28,12 +28,14 @@ EDITOR_HTML = '''<!doctype html>
   <h1>HeatingControl asetukset</h1>
   <label for="file">Tiedosto:</label>
   <select id="file"></select>
+  <label><input id="enabled" type="checkbox"> Säätö aktiivinen</label>
   <button id="load">Lataa</button>
   <button id="save">Tallenna</button>
   <p id="message" role="status"></p>
   <textarea id="content" spellcheck="false"></textarea>
   <script>
     const file = document.getElementById('file');
+    const enabled = document.getElementById('enabled');
     const content = document.getElementById('content');
     const message = document.getElementById('message');
     async function request(url, options) {
@@ -44,15 +46,33 @@ EDITOR_HTML = '''<!doctype html>
     }
     async function loadFiles() {
       const data = await request('/api/configs');
-      file.replaceChildren(...data.files.map(name => new Option(name, name)));
+      file.textContent = '';
+      data.files.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        file.appendChild(option);
+      });
       if (file.value) await loadFile();
     }
     async function loadFile() {
       if (!file.value) return;
       const data = await request('/api/config?file=' + encodeURIComponent(file.value));
       content.value = data.content;
+      updateEnabled();
       message.textContent = 'Tiedosto ladattu.';
     }
+    function updateEnabled() {
+      const config = JSON.parse(content.value);
+      enabled.checked = config[0].enabled !== false;
+    }
+    enabled.addEventListener('change', () => {
+      try {
+        const config = JSON.parse(content.value);
+        config[0].enabled = enabled.checked;
+        content.value = JSON.stringify(config, null, 2) + '\n';
+      } catch (error) { showError(error); }
+    });
     async function saveFile() {
       if (!file.value) return;
       const data = await request('/api/config?file=' + encodeURIComponent(file.value), {
@@ -75,13 +95,19 @@ EDITOR_HTML = '''<!doctype html>
 class ConfigStore:
     '''Read and safely write JSON configuration files.'''
 
-    def __init__(self, config_dir: str | Path = 'configs') -> None:
-        self.config_dir = Path(config_dir).resolve()
+    def __init__(self, config_dir: str | Path | None = None) -> None:
+        project_dir = Path(__file__).resolve().parent.parent
+        config_path = config_dir if config_dir is not None else project_dir / 'configs'
+        self.config_dir = Path(config_path).resolve()
 
     def _getPath(self, filename: str) -> Path:
         '''Return a configuration path and reject path traversal.'''
         path = (self.config_dir / filename).resolve()
-        if path.parent != self.config_dir and self.config_dir not in path.parents:
+        try:
+            path.relative_to(self.config_dir)
+        except ValueError as error:
+            raise ValueError('Virheellinen tiedostopolku.') from error
+        if path == self.config_dir:
             raise ValueError('Virheellinen tiedostopolku.')
         if path.suffix != '.json':
             raise ValueError('Vain JSON-tiedostoja voi muokata.')
@@ -110,6 +136,10 @@ class ConfigStore:
         data = json.loads(content)
         if not isinstance(data, list) or len(data) != 2:
             raise ValueError('Konfiguraation pitää olla kahden alkion JSON-taulukko.')
+        if not isinstance(data[0], dict) or not isinstance(data[1], dict):
+            raise ValueError('Konfiguraation alkioiden pitää olla JSON-objekteja.')
+        if 'enabled' in data[0] and not isinstance(data[0]['enabled'], bool):
+            raise ValueError('enabled-kentän pitää olla true tai false.')
         path.parent.mkdir(parents=True, exist_ok=True)
         formatted = json.dumps(data, indent=2, ensure_ascii=False) + '\n'
         temporary_path = None
@@ -208,7 +238,7 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
 
 
 def startConfigServer(host: str | None = None, port: int | None = None,
-                      config_dir: str | Path = 'configs') -> tuple[ThreadingHTTPServer, Thread]:
+                      config_dir: str | Path | None = None) -> tuple[ThreadingHTTPServer, Thread]:
     '''Start the configuration editor in a daemon thread.'''
     listen_host = host or os.getenv('CONFIG_WEB_HOST', '0.0.0.0')
     listen_port = port if port is not None else int(os.getenv('CONFIG_WEB_PORT', '8124'))

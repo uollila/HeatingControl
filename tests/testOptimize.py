@@ -73,6 +73,21 @@ class TestOptimize(unittest.TestCase):
                                   'Yritetään tunnin päästä uudelleen.')
 
     @patch('builtins.print')
+    def testSetHeatingDisabledDevice(self, mockPrint):
+        '''Test that disabled devices are not queried or adjusted.'''
+        target = MagicMock(spec=Device)
+        target.getName.return_value = 'testdevice'
+        target.isEnabled.return_value = False
+
+        setHeating(target)
+
+        target.getCurrentStatus.assert_not_called()
+        target.getHeatingDemand.assert_not_called()
+        target.adjustTempSetpoint.assert_not_called()
+        target.plotHistory.assert_not_called()
+        mockPrint.assert_any_call('Kohteen testdevice säätö ei ole aktiivinen, säätöä ei tehdä.')
+
+    @patch('builtins.print')
     def testSetHeatingAdjustsDevice(self, mockPrint):
         '''Test that heating is adjusted based on status and heating demand.'''
         target = MagicMock(spec=Device)
