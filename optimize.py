@@ -7,6 +7,7 @@ from pathlib import Path
 
 import schedule
 
+from configweb import startConfigServer  # pylint: disable=import-error
 from devices.device import Device # pylint: disable=import-error
 from devices.panel import Panel # pylint: disable=import-error
 from devices.thermostat import Thermostat # pylint: disable=import-error
@@ -89,6 +90,7 @@ def main() -> None:
     # Ajetaan jokaiselle laitteelle yksi säätö heti käynnistyksessä.
     for device in devices:
         setHeating(device)
+    startConfigServer()
     while True:
         schedule.run_pending()
         time.sleep(30)

@@ -32,6 +32,12 @@ export HA_TOKEN="<long-lived access token>"
 python optimize.py
 ```
 
+The configuration editor is available at `http://127.0.0.1:8080/` while the
+service is running. The listener is local-only by default. Set
+`CONFIG_WEB_HOST` and `CONFIG_WEB_PORT` before starting the service to change
+the listening address or port. Do not expose the editor outside a trusted
+network; it has no authentication.
+
 The service runs in the foreground; run it under systemd, tmux/screen or
 `nohup python optimize.py &` to keep it alive.
 
@@ -54,6 +60,8 @@ The service runs in the foreground; run it under systemd, tmux/screen or
 - Second object: API parameters used to request a heating plan from <https://api.spot-hinta.fi/SmartHeating>.
 - `configs/default.json` is only a template and is never controlled. Every other `*.json`
   found under `configs/` is loaded and scheduled.
+- Changes to an existing configuration are read on the next device adjustment. Adding,
+  removing or changing a device's `type` requires restarting the service.
 
 ## Behaviour
 
@@ -71,8 +79,8 @@ calls are mocked). Run from the project root:
 python3 -m unittest discover
 ```
 
-This scans all test packages: `tests/` (optimize module), `devices/tests/` and
-`apis/tests/`. A single package can be run with e.g.
+This scans all test packages: `configweb/tests/`, `tests/` (optimize module),
+`devices/tests/` and `apis/tests/`. A single package can be run with e.g.
 `python3 -m unittest discover -s devices/tests`.
 
 ## Linting
@@ -80,7 +88,7 @@ This scans all test packages: `tests/` (optimize module), `devices/tests/` and
 The code is linted with pylint (included in requirements.txt). Run from the project root:
 
 ```bash
-pylint optimize.py devices apis
+pylint optimize.py configweb devices apis tests
 ```
 
 There is no pylint configuration file in the repository, and methods intentionally use
