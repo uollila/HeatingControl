@@ -8,10 +8,6 @@ from devices.device import Device # pylint: disable=import-error
 class Panel(Device):
     '''Class for panel device.'''
 
-    def __init__(self, configPath: str):
-        super().__init__(configPath)
-        self.sensorMode = False
-
     def printStatus(self, responseJson: dict) -> None:
         '''Print current status of the panel.'''
         try:

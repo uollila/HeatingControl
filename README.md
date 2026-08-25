@@ -64,11 +64,16 @@ The service runs in the foreground; run it under systemd, tmux/screen or
 
 ## Tests
 
-Tests use the standard library `unittest` and need no network access. Run from the project root:
+Tests use the standard library `unittest` and need no network access (all HTTP
+calls are mocked). Run from the project root:
 
 ```bash
-python3 -m unittest discover -s devices/tests -p "testThermostat.py"
+python3 -m unittest discover
 ```
+
+This scans all test packages: `tests/` (optimize module), `devices/tests/` and
+`apis/tests/`. A single package can be run with e.g.
+`python3 -m unittest discover -s devices/tests`.
 
 ## Linting
 

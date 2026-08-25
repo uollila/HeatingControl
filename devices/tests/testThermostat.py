@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 '''Module for unit test for Thermostat class.
 Run with command in the main directory of the project:
-python3 -m unittest discover -s devices/tests -p "testThermostat.py"
+python3 -m unittest discover -s devices/tests
 '''
 
 import unittest
