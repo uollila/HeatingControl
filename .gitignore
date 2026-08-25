@@ -3,3 +3,5 @@ __pycache__/
 configs/*
 !configs/default.json
 .venv/
+.venv-win/
+AGENTS.md

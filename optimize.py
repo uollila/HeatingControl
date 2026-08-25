@@ -43,7 +43,7 @@ def getDeviceType(file) -> str:
     parsedData = json.loads(data)
     return parsedData[0]['type']
 
-def createObject(file: Path) -> Device:
+def createObject(file: Path) -> Device | None:
     '''Create device object based on configuration file.'''
     deviceType = getDeviceType(file)
     match deviceType:
@@ -68,6 +68,8 @@ def readConfigs(devices: list) -> list[Device]:
             continue
         print(f'Löytyi konfiguraatiotiedosto: {file}. Luodaan sille objekti ja ajastetaan säätö.')
         device = createObject(file)
+        if device is None:
+            continue
         devices.append(device)
     return devices
 

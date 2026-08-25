@@ -1,0 +1,2 @@
+# Enforce Unix line endings (repo runs on Linux; avoid CRLF drift from Windows editors)
+* text=auto eol=lf

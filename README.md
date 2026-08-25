@@ -12,9 +12,28 @@ Supported devices
 
 Requirements
 
-- Python 3.9+
+- Python 3.12 or newer (the code uses newer f-string syntax and `match`)
 - pip packages listed in the requirements.txt
-- Devices are in local network with fixed IP address  
+- HeatIt devices in local network with fixed IP addresses
+- For `heatpump` type devices: Home Assistant reachable through its REST API,
+  with `HA_URL` and `HA_TOKEN` environment variables set
+
+## Setup and running
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+# Only needed for heatpump type devices:
+export HA_URL="http://your-home-assistant:8123"
+export HA_TOKEN="<long-lived access token>"
+
+python optimize.py
+```
+
+The service runs in the foreground; run it under systemd, tmux/screen or
+`nohup python optimize.py &` to keep it alive.
 
 ## Quickstart
 
@@ -24,20 +43,44 @@ Requirements
     - With HA devices, the IP must be set to the id of the climate entity of the device.
 
 2. Run script `python optimize.py`.
-    - The script creates objects for each config file and schedules heating according to the 
-configuration
-    - The script updates temperature setpoints every 15 minutes (aligned to :00, :15, :30, :45)
-and logs actions to the console.
+    - The script creates objects for each config file and schedules heating according to the configuration.
+    - On startup every device is adjusted once immediately, and after that every 15 minutes
+      (at :01, :16, :31 and :46 past the hour; each additional device is offset by 2 seconds
+      so devices are not polled at the same moment). Actions are logged to the console.
 
 ## Configuration overview
 
 - First object in the JSON: local device settings — name, IP, type, tempLow, tempHigh, sensorMode, etc.
 - Second object: API parameters used to request a heating plan from <https://api.spot-hinta.fi/SmartHeating>.
+- `configs/default.json` is only a template and is never controlled. Every other `*.json`
+  found under `configs/` is loaded and scheduled.
 
 ## Behaviour
 
 - The service toggles between low and high setpoints rather than turning heating fully off.
 - If device connectivity is lost the script will retry; existing device setpoints remain unchanged.
+- If the spot-hinta.fi API is unreachable or the plan has no matching time slot, heating is
+  switched on only during the `BackupHours` defined in the configuration.
+
+## Tests
+
+Tests use the standard library `unittest` and need no network access. Run from the project root:
+
+```bash
+python3 -m unittest discover -s devices/tests -p "testThermostat.py"
+```
+
+## Linting
+
+The code is linted with pylint (included in requirements.txt). Run from the project root:
+
+```bash
+pylint optimize.py devices apis
+```
+
+There is no pylint configuration file in the repository, and methods intentionally use
+camelCase instead of the Python snake_case convention. To silence the resulting
+`invalid-name` warnings, add `--disable=C0103`.
 
 ## Further information
 

@@ -69,7 +69,7 @@ class Device:
         print(f'Tuleva suunnitelma, joka vanhenee {expirationLocalTime}:')
         for item in self.futurePlan:
             planTimeLocal = self._getLocalTimeFromEpoch(item['epochMs'])
-            if epoch > item['epochMs']and not setDone:
+            if epoch > item['epochMs'] and not setDone:
                 print(f'Aika: {planTimeLocal}, Lämmitystarve: {item['result']} (VOIMASSA NYT)')
                 returnValue = item['result']
                 setDone = True
@@ -131,7 +131,7 @@ class Device:
         '''Get current temperature from status dictionary.'''
         return status['parameters']['heatingSetpoint']
 
-    def adjustTempSetpoint(self, status: dict, heating: bool) -> None:
+    def adjustTempSetpoint(self, status: dict, heating: bool) -> bool:
         '''Adjust temperature setpoint based on current status and heating demand.'''
         temps = self._getTemps()
         currentTemp = self._getCurrentTemperature(status)

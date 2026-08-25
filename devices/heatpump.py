@@ -28,7 +28,7 @@ class HeatPump(Device):
         '''Plot history of heat pump data.'''
         print('\n\n')
 
-    def _initHomeAssistantClient(self) -> HomeAssistantClient:
+    def _initHomeAssistantClient(self) -> HomeAssistantClient | None:
         '''Initialize session to Home Assistant.'''
         url = os.getenv('HA_URL', 'default')
         token = os.getenv('HA_TOKEN', 'default')
