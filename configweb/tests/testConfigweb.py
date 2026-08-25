@@ -5,6 +5,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -59,7 +60,8 @@ class TestConfigWebServer(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tempDir, True)
         configDir = Path(self.tempDir)
         (configDir / 'device.json').write_text('[{}, {}]', encoding='utf-8')
-        self.server, _ = startConfigServer('127.0.0.1', 0, configDir)
+        with patch('builtins.print'):
+            self.server, _ = startConfigServer('127.0.0.1', 0, configDir)
         self.addCleanup(self._stopServer)
         self.baseUrl = f'http://127.0.0.1:{self.server.server_port}'
 
@@ -70,19 +72,21 @@ class TestConfigWebServer(unittest.TestCase):
 
     def testListAndReadEndpoints(self):
         '''Test listing and reading configurations over HTTP.'''
-        with urlopen(f'{self.baseUrl}/api/configs') as response:
-            self.assertEqual(json.loads(response.read())['files'], ['device.json'])
-        with urlopen(f'{self.baseUrl}/api/config?file=device.json') as response:
-            self.assertEqual(json.loads(response.read())['content'], '[\n  {},\n  {}\n]\n')
+        with patch('builtins.print'):
+            with urlopen(f'{self.baseUrl}/api/configs') as response:
+                self.assertEqual(json.loads(response.read())['files'], ['device.json'])
+            with urlopen(f'{self.baseUrl}/api/config?file=device.json') as response:
+                self.assertEqual(json.loads(response.read())['content'], '[\n  {},\n  {}\n]\n')
 
     def testPutEndpoint(self):
         '''Test saving a configuration over HTTP.'''
         body = json.dumps({'content': '[{"type": "panel"}, {}]'}).encode('utf-8')
         request = Request(f'{self.baseUrl}/api/config?file=device.json', data=body,
                           headers={'Content-Type': 'application/json'}, method='PUT')
-        with urlopen(request) as response:
-            self.assertEqual(json.loads(response.read())['content'],
-                             '[\n  {\n    "type": "panel"\n  },\n  {}\n]\n')
+        with patch('builtins.print'):
+            with urlopen(request) as response:
+                self.assertEqual(json.loads(response.read())['content'],
+                                 '[\n  {\n    "type": "panel"\n  },\n  {}\n]\n')
 
 
 if __name__ == '__main__':
