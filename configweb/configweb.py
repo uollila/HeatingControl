@@ -37,7 +37,7 @@ EDITOR_HTML = '''<!doctype html>
     const content = document.getElementById('content');
     const message = document.getElementById('message');
     async function request(url, options) {
-      const response = await fetch(url, options);
+      const response = await fetch(url, {...options, cache: 'no-store'});
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Pyyntö epäonnistui');
       return data;
@@ -139,6 +139,7 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
         payload = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store')
         self.send_header('Content-Length', str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -155,6 +156,7 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
                 payload = EDITOR_HTML.encode('utf-8')
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.send_header('Cache-Control', 'no-store')
                 self.send_header('Content-Length', str(len(payload)))
                 self.end_headers()
                 self.wfile.write(payload)
