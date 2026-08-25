@@ -86,7 +86,9 @@ def main() -> None:
         schedule.every().hour.at(f'31:{baseTime}').do(setHeating, device)
         schedule.every().hour.at(f'46:{baseTime}').do(setHeating, device)
         baseTime += 2
-    schedule.run_all()
+    # Ajetaan jokaiselle laitteelle yksi säätö heti käynnistyksessä.
+    for device in devices:
+        setHeating(device)
     while True:
         schedule.run_pending()
         time.sleep(30)
