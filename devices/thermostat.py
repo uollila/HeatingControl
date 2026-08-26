@@ -24,7 +24,7 @@ class Thermostat(Device):
 
     def plotHistory(self) -> None:
         '''Plot history of thermostat data.'''
-        print('\n\n')
+        print('\n')
 
     def sendTempToDevice(self, newTemp: float) -> httpx.Response:
         '''Send new temperature to thermostat.'''

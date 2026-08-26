@@ -19,7 +19,7 @@ class Panel(Device):
 
     def plotHistory(self):
         '''Plot history of panel data.'''
-        print('\n\n')
+        print('\n')
 
     def sendTempToDevice(self, newTemp: float) -> httpx.Response:
         '''Send new temperature to panel.'''

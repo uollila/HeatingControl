@@ -26,7 +26,7 @@ class HeatPump(Device):
 
     def plotHistory(self) -> None:
         '''Plot history of heat pump data.'''
-        print('\n\n')
+        print('\n')
 
     def _initHomeAssistantClient(self) -> HomeAssistantClient | None:
         '''Initialize session to Home Assistant.'''

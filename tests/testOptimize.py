@@ -85,7 +85,7 @@ class TestOptimize(unittest.TestCase):
         target.getHeatingDemand.assert_not_called()
         target.adjustTempSetpoint.assert_not_called()
         target.plotHistory.assert_not_called()
-        mockPrint.assert_any_call('Kohteen testdevice säätö ei ole aktiivinen, säätöä ei tehdä.')
+        mockPrint.assert_any_call('Kohteen testdevice säätö ei ole aktiivinen, säätöä ei tehdä.\n')
 
     @patch('builtins.print')
     def testSetHeatingAdjustsDevice(self, mockPrint):

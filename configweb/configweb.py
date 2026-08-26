@@ -5,10 +5,12 @@ import json
 import html
 import os
 import tempfile
+import time
+from collections import deque
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 from urllib.parse import parse_qs, urlparse
 
 
@@ -22,23 +24,36 @@ EDITOR_HTML = '''<!doctype html>
     body { font-family: sans-serif; margin: 1rem auto; max-width: 1000px; padding: 0 1rem; }
     textarea { box-sizing: border-box; font: 14px monospace; min-height: 70vh; width: 100%; }
     button, select { font-size: 1rem; margin: .4rem .4rem .8rem 0; padding: .4rem; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    #logs { background: #111; color: #eee; min-height: 70vh; overflow: auto;
+            padding: 1rem; white-space: pre-wrap; }
     #message { min-height: 1.5em; }
   </style>
 </head>
 <body>
   <h1>HeatingControl asetukset</h1>
-  <label for="file">Tiedosto:</label>
-  <select id="file"></select>
-  <label><input id="enabled" type="checkbox"> Säätö aktiivinen</label>
-  <button id="load">Lataa</button>
-  <button id="save">Tallenna</button>
-  <p id="message" role="status"></p>
-  <textarea id="content" spellcheck="false"></textarea>
+  <button id="editorTab">Asetukset</button>
+  <button id="logsTab">Lokit</button>
+  <section id="editor" class="tab active">
+    <label for="file">Tiedosto:</label>
+    <select id="file"></select>
+    <label><input id="enabled" type="checkbox"> Säätö aktiivinen</label>
+    <button id="load">Lataa</button>
+    <button id="save">Tallenna</button>
+    <p id="message" role="status"></p>
+    <textarea id="content" spellcheck="false"></textarea>
+  </section>
+  <section id="logView" class="tab">
+    <h2>Viimeisimmät lokit</h2>
+    <pre id="logs">Ladataan lokeja...</pre>
+  </section>
   <script>
     var file = document.getElementById('file');
     var enabled = document.getElementById('enabled');
     var content = document.getElementById('content');
     var message = document.getElementById('message');
+    var logs = document.getElementById('logs');
     function showError(error) { message.textContent = 'Virhe: ' + error.message; }
     function request(url, options) {
       options = options || {};
@@ -86,6 +101,17 @@ EDITOR_HTML = '''<!doctype html>
         message.textContent = 'Tiedosto tallennettu.';
       }).catch(showError);
     }
+    function loadLogs() {
+      request('/api/logs').then(function (data) {
+        logs.textContent = data.logs.join('\\n');
+        logs.scrollTop = logs.scrollHeight;
+      }).catch(function (error) { logs.textContent = 'Virhe: ' + error.message; });
+    }
+    function showTab(tabId) {
+      document.getElementById('editor').className = tabId === 'editor' ? 'tab active' : 'tab';
+      document.getElementById('logView').className = tabId === 'logs' ? 'tab active' : 'tab';
+      if (tabId === 'logs') { loadLogs(); }
+    }
     enabled.addEventListener('change', function () {
       try {
         var config = JSON.parse(content.value);
@@ -96,6 +122,9 @@ EDITOR_HTML = '''<!doctype html>
     file.addEventListener('change', loadFile);
     document.getElementById('load').addEventListener('click', loadFile);
     document.getElementById('save').addEventListener('click', saveFile);
+    document.getElementById('editorTab').addEventListener('click', function () { showTab('editor'); });
+    document.getElementById('logsTab').addEventListener('click', function () { showTab('logs'); });
+    window.setInterval(loadLogs, 5000);
     request('/api/configs').then(function (data) {
       rebuildFileList(data.files);
       if (file.value) { loadFile(); }
@@ -103,6 +132,45 @@ EDITOR_HTML = '''<!doctype html>
   </script>
 </body>
 </html>'''
+
+
+class LogBuffer:
+    '''Keep the most recent console lines in memory.'''
+
+    def __init__(self, max_lines: int = 500) -> None:
+        self.lines = deque(maxlen=max_lines)
+        self.lock = Lock()
+
+    def write(self, text: str) -> None:
+        '''Add complete lines from a stdout write to the buffer.'''
+        with self.lock:
+            for line in text.splitlines():
+                if line:
+                    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+                    self.lines.append(f'{timestamp} | {line}')
+
+    def getLines(self) -> list[str]:
+        '''Return a snapshot of buffered lines.'''
+        with self.lock:
+            return list(self.lines)
+
+
+class ConsoleTee:
+    '''Write output to the console and the in-memory log buffer.'''
+
+    def __init__(self, console, log_buffer: LogBuffer) -> None:
+        self.console = console
+        self.logBuffer = log_buffer
+
+    def write(self, text: str) -> int:
+        '''Write text to both output destinations.'''
+        self.console.write(text)
+        self.logBuffer.write(text)
+        return len(text)
+
+    def flush(self) -> None:
+        '''Flush the original console stream.'''
+        self.console.flush()
 
 
 class ConfigStore:
@@ -172,10 +240,13 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
     '''HTTP request handler for the configuration editor.'''
 
     store: ConfigStore
+    logBuffer: LogBuffer
 
     def log_message(self, format_string: str, *args) -> None:  # pylint: disable=arguments-differ
-        '''Keep the standard HTTP log output in Finnish.'''
-        print(f'Web-muokkain: {format_string % args}')
+        '''Log only failed HTTP requests.'''
+        status_code = int(args[1]) if len(args) > 1 else 200
+        if status_code >= 400:
+            print(f'Web-editorin virhe: {format_string % args}')
 
     def _sendJson(self, status: HTTPStatus, data: dict) -> None:
         '''Send a JSON response.'''
@@ -237,6 +308,8 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
                     self._error(HTTPStatus.BAD_REQUEST, 'Tiedostonimi puuttuu.')
                 else:
                     self._sendJson(HTTPStatus.OK, {'content': self.store.read(filename)})
+            elif parsed.path == '/api/logs':
+                self._sendJson(HTTPStatus.OK, {'logs': self.logBuffer.getLines()})
             else:
                 self._error(HTTPStatus.NOT_FOUND, 'Sivua ei löytynyt.')
         except json.JSONDecodeError as error:
@@ -277,16 +350,18 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
 
 
 def startConfigServer(host: str | None = None, port: int | None = None,
-                      config_dir: str | Path | None = None) -> tuple[ThreadingHTTPServer, Thread]:
+                      config_dir: str | Path | None = None,
+                      log_buffer: LogBuffer | None = None) -> tuple[ThreadingHTTPServer, Thread]:
     '''Start the configuration editor in a daemon thread.'''
     listen_host = host or os.getenv('CONFIG_WEB_HOST', '0.0.0.0')
     listen_port = port if port is not None else int(os.getenv('CONFIG_WEB_PORT', '8124'))
     store = ConfigStore(config_dir)
+    buffer = log_buffer or LogBuffer()
     handler = type('ConfiguredConfigRequestHandler', (ConfigRequestHandler,),
-                   {'store': store})
+                   {'store': store, 'logBuffer': buffer})
     server = ThreadingHTTPServer((listen_host, listen_port), handler)
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    print(f'Web-muokkain käynnistetty osoitteessa http://{listen_host}:{server.server_port}. '
-          f'Asetushakemisto: {store.config_dir}, tiedostoja: {len(store.listFiles())}.')
+    print(f'Web-editori käynnistetty osoitteessa '
+          f'http://{listen_host}:{server.server_port}.')
     return server, thread

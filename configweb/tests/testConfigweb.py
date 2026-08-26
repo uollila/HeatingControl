@@ -9,7 +9,7 @@ from unittest.mock import patch
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-from configweb import ConfigStore, startConfigServer  # pylint: disable=import-error
+from configweb import ConfigStore, LogBuffer, startConfigServer  # pylint: disable=import-error
 
 
 class TestConfigStore(unittest.TestCase):
@@ -51,6 +51,16 @@ class TestConfigStore(unittest.TestCase):
         '''Test that paths outside configs cannot be accessed.'''
         with self.assertRaises(ValueError):
             self.store.read('../secret.json')
+
+    def testLogBufferKeepsLatestLines(self):
+        '''Test that the log buffer keeps only its configured number of lines.'''
+        buffer = LogBuffer(max_lines=2)
+        with patch('configweb.configweb.time.strftime', return_value='2026-08-26 14:32:10'):
+            buffer.write('ensimmäinen\ntoinen\nkolmas\n')
+        self.assertEqual(buffer.getLines(), [
+            '2026-08-26 14:32:10 | toinen',
+            '2026-08-26 14:32:10 | kolmas'
+        ])
 
 
 class TestConfigWebServer(unittest.TestCase):
@@ -99,6 +109,12 @@ class TestConfigWebServer(unittest.TestCase):
             with urlopen(request) as response:
                 self.assertEqual(json.loads(response.read())['content'],
                                  '[\n  {\n    "type": "panel"\n  },\n  {}\n]\n')
+
+    def testLogsEndpoint(self):
+        '''Test reading recent logs over HTTP.'''
+        with patch('builtins.print'):
+            with urlopen(f'{self.baseUrl}/api/logs') as response:
+                self.assertEqual(json.loads(response.read())['logs'], [])
 
 
 if __name__ == '__main__':

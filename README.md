@@ -41,6 +41,10 @@ the listening address or port. For local-only access, set
 `CONFIG_WEB_HOST=127.0.0.1`. Do not expose the editor outside a trusted
 network; it has no authentication.
 
+The editor's `Lokit` tab shows the latest 500 console messages and refreshes
+automatically every five seconds. Logs are kept in memory only and are cleared
+when the service restarts.
+
 The service runs in the foreground; run it under systemd, tmux/screen or
 `nohup python optimize.py &` to keep it alive.
 

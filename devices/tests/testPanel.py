@@ -53,7 +53,7 @@ class TestPanel(unittest.TestCase):
         '''Test the plotHistory method of Panel.'''
         with patch('builtins.print') as mockPrint:
             self.panel.plotHistory()
-            mockPrint.assert_called_once_with('\n\n')
+            mockPrint.assert_called_once_with('\n')
 
 if __name__ == '__main__':
     unittest.main()

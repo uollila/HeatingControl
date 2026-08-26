@@ -2,12 +2,13 @@
 '''Main module for heating optimization'''
 
 import json
+import sys
 import time
 from pathlib import Path
 
 import schedule
 
-from configweb import startConfigServer  # pylint: disable=import-error
+from configweb import ConsoleTee, LogBuffer, startConfigServer  # pylint: disable=import-error
 from devices.device import Device # pylint: disable=import-error
 from devices.panel import Panel # pylint: disable=import-error
 from devices.thermostat import Thermostat # pylint: disable=import-error
@@ -18,7 +19,7 @@ def setHeating(target: Device) -> None:
     #Printataan perustiedot
     name = target.getName()
     if not target.isEnabled():
-        print(f'Kohteen {name} säätö ei ole aktiivinen, säätöä ei tehdä.')
+        print(f'Kohteen {name} säätö ei ole aktiivinen, säätöä ei tehdä.\n')
         return
     timestamp = time.localtime(time.time())
     strTime = time.strftime('%H:%M:%S (%a %d %b)', timestamp)
@@ -80,10 +81,12 @@ def readConfigs(devices: list) -> list[Device]:
 def main() -> None:
     '''Main function to run the heating optimization.'''
     devices = []
+    logBuffer = LogBuffer()
+    sys.stdout = ConsoleTee(sys.stdout, logBuffer)
     # Luodaan objektit jokaiselle ohjattavalle kohteelle. Annetaan nimet ja IP-osoitteet
     devices = readConfigs(devices)
     configDir = Path(__file__).resolve().parent / 'configs'
-    startConfigServer(config_dir=configDir)
+    startConfigServer(config_dir=configDir, log_buffer=logBuffer)
     #Ajastetaan säätöfunktio jokaiselle kohteelle
     baseTime = 10
     for device in devices:
