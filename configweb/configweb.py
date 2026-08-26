@@ -191,34 +191,38 @@ class ConfigRequestHandler(BaseHTTPRequestHandler):
         '''Send a JSON error response.'''
         self._sendJson(status, {'error': message})
 
+    def _editorPage(self) -> bytes:
+        '''Build the editor page with the initial file list and content.'''
+        files = self.store.listFiles()
+        options = ''.join(
+            f'<option value="{html.escape(filename, quote=True)}">'
+            f'{html.escape(filename)}</option>'
+            for filename in files)
+        initial_content = ''
+        initial_enabled = True
+        if files:
+            try:
+                initial_content = self.store.read(files[0])
+                initial_enabled = json.loads(initial_content)[0].get('enabled', True) \
+                    is not False
+            except (ValueError, OSError):
+                initial_content = ''
+        page = EDITOR_HTML.replace('<select id="file"></select>',
+                                   f'<select id="file">{options}</select>')
+        page = page.replace('<textarea id="content" spellcheck="false"></textarea>',
+                            '<textarea id="content" spellcheck="false">'
+                            f'{html.escape(initial_content)}</textarea>')
+        if initial_enabled:
+            page = page.replace('<input id="enabled" type="checkbox">',
+                                '<input id="enabled" type="checkbox" checked>')
+        return page.encode('utf-8')
+
     def do_GET(self) -> None:  # pylint: disable=invalid-name
         '''Handle the editor page and read-only API endpoints.'''
         parsed = urlparse(self.path)
         try:
             if parsed.path == '/':
-                files = self.store.listFiles()
-                options = ''.join(
-                    f'<option value="{html.escape(filename, quote=True)}">'
-                    f'{html.escape(filename)}</option>'
-                    for filename in files)
-                initial_content = ''
-                initial_enabled = True
-                if files:
-                    try:
-                        initial_content = self.store.read(files[0])
-                        initial_enabled = json.loads(initial_content)[0].get('enabled', True) \
-                            is not False
-                    except (ValueError, OSError):
-                        initial_content = ''
-                page = EDITOR_HTML.replace('<select id="file"></select>',
-                                           f'<select id="file">{options}</select>')
-                page = page.replace('<textarea id="content" spellcheck="false"></textarea>',
-                                    '<textarea id="content" spellcheck="false">'
-                                    f'{html.escape(initial_content)}</textarea>')
-                if initial_enabled:
-                    page = page.replace('<input id="enabled" type="checkbox">',
-                                        '<input id="enabled" type="checkbox" checked>')
-                payload = page.encode('utf-8')
+                payload = self._editorPage()
                 self.send_response(HTTPStatus.OK)
                 self.send_header('Content-Type', 'text/html; charset=utf-8')
                 self.send_header('Cache-Control', 'no-store')
